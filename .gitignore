@@ -1,0 +1,57 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Установленные пакеты
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Виртуальные окружения
+venv/
+ENV/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# Настройки IDE
+.idea/
+.vscode/
+
+# Логи
+*.log
+
+# Файлы конфигурации
+*.sqlite3
+*.db
+*.json
+
+# Статические и медиа файлы
+/static/
+media/
+
+# Файлы конфиденциальной информации
+*.env
+*.local
+
+# Документы
+*.pdf
+*.doc
+*.docx
+
+# Другое
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+
+# Настройки IDE
+.idea/
+.vscode/
+*.code-workspace

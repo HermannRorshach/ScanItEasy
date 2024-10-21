@@ -1,0 +1,78 @@
+{% extends "base.html" %} {% block title %} Загрузка данных для генерации
+презентации {% endblock %} {% block content %}
+<div class="container">
+  <nav class="top-menu">
+    <ul>
+      <li>
+        <b><a href="{% url 'CreatePresentation:faq' %}">FAQ</a></b>
+      </li>
+      <li>
+        <b
+          ><a href="{% url 'CreatePresentation:contacts' %}">Техподдержка</a></b
+        >
+      </li>
+    </ul>
+  </nav>
+  <!-- Alert для ошибок -->
+  <div id="error-alert" class="alert" style="display: none; color: red">
+    <span id="alert-message"></span>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="upload-form">
+    {% csrf_token %} {% if error_message %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        showAlert("{{ error_message|escapejs }}");
+      });
+    </script>
+    {% endif %}
+    <h1>Генератор презентаций</h1>
+    <h3 class="description">
+      Здесь вы можете загрузить данные для генерации презентации
+    </h3>
+    <div class="form-group">
+      <label for="excel" class="file-upload">Выбрать Excel-файл</label>
+      <input
+        type="file"
+        id="excel"
+        name="excel_file"
+        accept=".xlsx,.xls"
+        onchange="updateFileName('excel')"
+      />
+      <span id="excel-file-name" class="file-name"></span>
+    </div>
+    <div class="form-group">
+      <label for="images" class="file-upload">Выбрать изображения</label>
+      <input
+        type="file"
+        id="images"
+        name="images"
+        accept="image/*"
+        multiple
+        required
+      />
+      <div id="images-file-names" class="file-name"></div>
+    </div>
+    <button type="submit" class="submit-button">Создать презентацию</button>
+  </form>
+</div>
+<script>
+  document.getElementById("excel").addEventListener("change", function () {
+    const fileName = this.files.length > 0 ? this.files[0].name : "Нет файла";
+    document.getElementById("excel-file-name").textContent = fileName;
+  });
+
+  document.getElementById("images").addEventListener("change", function () {
+    const fileNames = Array.from(this.files)
+      .map((file) => file.name)
+      .join("<br>");
+    document.getElementById("images-file-names").innerHTML =
+      fileNames || "Нет файлов";
+  });
+
+  // Функция для показа алерта
+  function showAlert(message) {
+    document.getElementById("alert-message").innerHTML = message;
+    document.getElementById("error-alert").style.display = "block";
+  }
+</script>
+{% endblock %}
