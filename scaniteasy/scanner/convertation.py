@@ -5,7 +5,7 @@ from docx2pdf import convert
 
 
 class Converter:
-    def __init__(self, docx_file, pdf_file): #, image_file):
+    def __init__(self, docx_file, pdf_file):
         self.docx_file = docx_file
         self.pdf_file = pdf_file
         # self.image_file = image_file
@@ -67,6 +67,47 @@ class Converter:
                 os.remove(img)
         self.temp_images.clear()
 
+    def add_image_to_pdf(self, first_page_image, other_pages_image, last_page_image):
+        """Добавление изображений на страницы PDF."""
+        doc = pymupdf.open(self.pdf_file)
+
+        # Вставляем изображение на первую страницу
+        first_img = pymupdf.open(first_page_image)
+        first_page = doc.load_page(0)
+
+        # Получаем реальные размеры изображения
+        first_img_width = first_img[0].rect.width
+        first_img_height = first_img[0].rect.height
+
+        # Вставляем изображение в левый верхний угол первой страницы с его реальными размерами
+        first_page.insert_image(pymupdf.Rect(0, 0, first_img_width, first_img_height), filename=first_page_image)
+
+        # Вставляем изображение на последующие страницы
+        for page_num in range(1, doc.page_count):
+            page = doc.load_page(page_num)
+            other_img = pymupdf.open(other_pages_image)
+
+            other_img_width = other_img[0].rect.width
+            other_img_height = other_img[0].rect.height
+
+            # Вставляем изображение в левый верхний угол с его реальными размерами
+            page.insert_image(pymupdf.Rect(0, 0, other_img_width, other_img_height), filename=other_pages_image)
+
+        # Вставляем изображения на последнюю страницу
+        last_page = doc.load_page(doc.page_count - 1)
+        last_img = pymupdf.open(last_page_image)
+
+        last_img_width = last_img[0].rect.width
+        last_img_height = last_img[0].rect.height
+
+        # Вставляем изображение для последующих страниц в левый верхний угол
+        last_page.insert_image(pymupdf.Rect(0, last_page.rect.height - last_img_height, last_img_width, last_page.rect.height), filename=last_page_image)
+
+        doc.save("output.pdf", incremental=True, encryption=0)  # Сохраняем изменения
+        doc.close()
+
+
+
     @staticmethod
     def compress_pdf(input_pdf, output_pdf, compress_level=2):
         # Задаем параметры сжатия для Ghostscript
@@ -79,7 +120,7 @@ converter = Converter("test.docx", "output.pdf") #, "image.png")
 converter.docx_to_pdf()  # Преобразуем DOCX в PDF
 temp_images = converter.pdf_to_bw()  # Преобразуем PDF в черно-белый и получаем пути к изображениям
 print("Созданные изображения:", temp_images)
-converter.pngs_to_pdf("new_output.pdf", temp_images)
-# converter.add_image_to_pdf()  # Добавляем изображение на каждую страницу
+converter.pngs_to_pdf("output.pdf", temp_images)
+converter.add_image_to_pdf("Синяя лента. Первая страница.jpg", "Уголок.png", "Подпись переводчика.png")  # Добавляем изображение на каждую страницу
 converter.clean_temp_images()  # Удаляем временные изображения
-converter.compress_pdf(input_pdf='new_output.pdf', output_pdf='output.pdf')
+converter.compress_pdf(input_pdf='output.pdf', output_pdf='compressed_output.pdf')
