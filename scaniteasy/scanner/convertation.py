@@ -76,8 +76,11 @@ class Converter:
         first_page = doc.load_page(0)
 
         # Получаем реальные размеры изображения
-        first_img_width = first_img[0].rect.width
-        first_img_height = first_img[0].rect.height
+        # first_img_width = first_img[0].rect.width
+        first_img_width = 67.61
+        # first_img_height = first_img[0].rect.height
+        first_img_height = 40.18
+        print('first_img_width =', first_img_width, 'first_img_height =', first_img_height)
 
         # Вставляем изображение в левый верхний угол первой страницы с его реальными размерами
         first_page.insert_image(pymupdf.Rect(0, 0, first_img_width, first_img_height), filename=first_page_image)
@@ -87,18 +90,26 @@ class Converter:
             page = doc.load_page(page_num)
             other_img = pymupdf.open(other_pages_image)
 
-            other_img_width = other_img[0].rect.width
-            other_img_height = other_img[0].rect.height
+            # other_img_width = other_img[0].rect.width
+            # other_img_height = other_img[0].rect.height
+            other_img_width = 116.6
+            other_img_height = 119
 
             # Вставляем изображение в левый верхний угол с его реальными размерами
             page.insert_image(pymupdf.Rect(0, 0, other_img_width, other_img_height), filename=other_pages_image)
 
+        print('other_img_width =', other_img_width, 'other_img_height =', other_img_height)
         # Вставляем изображения на последнюю страницу
         last_page = doc.load_page(doc.page_count - 1)
         last_img = pymupdf.open(last_page_image)
 
-        last_img_width = last_img[0].rect.width
-        last_img_height = last_img[0].rect.height
+        # last_img_width = last_img[0].rect.width
+        # last_img_height = last_img[0].rect.height
+        last_img_width = 595
+        last_img_height = 84
+
+        print('last_img_width =', last_img_width, 'last_img_height =', last_img_height)
+        print('last_page.rect.width =', last_page.rect.width, 'last_page.rect.height =', last_page.rect.height)
 
         # Вставляем изображение для последующих страниц в левый верхний угол
         last_page.insert_image(pymupdf.Rect(0, last_page.rect.height - last_img_height, last_img_width, last_page.rect.height), filename=last_page_image)
