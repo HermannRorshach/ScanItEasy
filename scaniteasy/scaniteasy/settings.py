@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'scanner.apps.ScannerConfig',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,7 @@ ROOT_URLCONF = 'scaniteasy.urls'
 
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
+LOGIN_REDIRECT_URL = 'scanner:my_templates'
 
 TEMPLATES = [
     {
@@ -68,6 +70,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'scanner.context_processors.menu.menu',
+                'scanner.context_processors.year.year',
             ],
         },
     },

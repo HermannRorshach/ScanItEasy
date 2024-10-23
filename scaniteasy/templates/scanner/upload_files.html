@@ -1,18 +1,5 @@
-{% extends "base.html" %} {% block title %} Загрузка данных для генерации
-презентации {% endblock %} {% block content %}
+{% extends "base.html" %} {% block title %} Создание шаблона {% endblock %} {% block content %}
 <div class="container">
-  <nav class="top-menu">
-    <ul>
-      <li>
-        <b><a href="{% url 'CreatePresentation:faq' %}">FAQ</a></b>
-      </li>
-      <li>
-        <b
-          ><a href="{% url 'CreatePresentation:contacts' %}">Техподдержка</a></b
-        >
-      </li>
-    </ul>
-  </nav>
   <!-- Alert для ошибок -->
   <div id="error-alert" class="alert" style="display: none; color: red">
     <span id="alert-message"></span>
