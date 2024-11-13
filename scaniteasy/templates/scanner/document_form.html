@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  Создание шаблона документа
+{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1>Заполните форму для создания шаблона документа</h1>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Цвет ленточки -->
+      <div class="mb-3">
+        <label for="id_ribbon_color" class="form-label">Цвет ленточки</label>
+        <select class="form-select" id="id_ribbon_color" name="ribbon_color">
+          {% for value, label in form.ribbon_color.field.choices %}
+            <option value="{{ value }}" {% if form.ribbon_color.value == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Имя переводчика -->
+      <div class="mb-3">
+        <label for="id_translator" class="form-label">Имя переводчика</label>
+        <select class="form-select" id="id_translator" name="translator">
+          {% for value, label in form.translator.field.choices %}
+            <option value="{{ value }}" {% if form.translator.value == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Количество страниц -->
+      <div class="mb-3">
+        <label for="id_page_count" class="form-label">Количество страниц</label>
+        <input type="number" class="form-control" id="id_page_count" name="page_count" value="{{ form.page_count.value }}" min="1">
+      </div>
+
+      <!-- Загрузка DOCX файла -->
+      <div class="mb-3">
+        <label for="id_docx_file" class="form-label">Загрузите файл DOCX</label>
+        <input class="form-control" type="file" id="id_docx_file" name="docx_file" accept=".docx" required>
+      </div>
+
+      <!-- Загрузка скана последней страницы -->
+      <div class="mb-3">
+        <label for="id_last_page_scan" class="form-label">Загрузите скан последней страницы</label>
+        <input class="form-control" type="file" id="id_last_page_scan" name="last_page_scan" accept="image/jpeg, image/png, application/pdf">
+      </div>
+
+      <!-- Кнопка отправки формы -->
+      <button type="submit" class="btn btn-primary">Сохранить шаблон</button>
+    </form>
+  </div>
+{% endblock %}

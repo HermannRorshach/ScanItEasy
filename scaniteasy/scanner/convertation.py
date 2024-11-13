@@ -76,10 +76,10 @@ class Converter:
         first_page = doc.load_page(0)
 
         # Получаем реальные размеры изображения
-        # first_img_width = first_img[0].rect.width
-        first_img_width = 67.61
-        # first_img_height = first_img[0].rect.height
-        first_img_height = 40.18
+        first_img_width = first_img[0].rect.width
+        first_img_width = 83.3
+        first_img_height = first_img[0].rect.height
+        first_img_height = 44.88
         print('first_img_width =', first_img_width, 'first_img_height =', first_img_height)
 
         # Вставляем изображение в левый верхний угол первой страницы с его реальными размерами
@@ -90,10 +90,10 @@ class Converter:
             page = doc.load_page(page_num)
             other_img = pymupdf.open(other_pages_image)
 
-            # other_img_width = other_img[0].rect.width
-            # other_img_height = other_img[0].rect.height
-            other_img_width = 116.6
-            other_img_height = 119
+            other_img_width = other_img[0].rect.width
+            other_img_height = other_img[0].rect.height
+            other_img_width = 91.5
+            other_img_height = 136.8
 
             # Вставляем изображение в левый верхний угол с его реальными размерами
             page.insert_image(pymupdf.Rect(0, 0, other_img_width, other_img_height), filename=other_pages_image)
@@ -132,6 +132,6 @@ converter.docx_to_pdf()  # Преобразуем DOCX в PDF
 temp_images = converter.pdf_to_bw()  # Преобразуем PDF в черно-белый и получаем пути к изображениям
 print("Созданные изображения:", temp_images)
 converter.pngs_to_pdf("output.pdf", temp_images)
-converter.add_image_to_pdf("Синяя лента. Первая страница.jpg", "Уголок.png", "Подпись переводчика.png")  # Добавляем изображение на каждую страницу
+converter.add_image_to_pdf("Красная лента. Первая страница.png", "Уголок с красной лентой.png", "Подпись переводчика.png")  # Добавляем изображение на каждую страницу
 converter.clean_temp_images()  # Удаляем временные изображения
 converter.compress_pdf(input_pdf='output.pdf', output_pdf='compressed_output.pdf')
