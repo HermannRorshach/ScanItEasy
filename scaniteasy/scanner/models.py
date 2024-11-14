@@ -1,4 +1,8 @@
+import os
+
+from django.conf import settings
 from django.db import models
+
 
 class DocumentTemplate(models.Model):
 
@@ -44,6 +48,18 @@ class DocumentTemplate(models.Model):
 
     def __str__(self):
         return f"Шаблон {self.translator} - {self.ribbon_color}"
+
+    def get_documents_directory(self):
+        """
+        Возвращает абсолютный путь к директории, где хранятся документы.
+        """
+        return os.path.join(settings.MEDIA_ROOT, 'documents')
+
+    def get_scans_directory(self):
+        """
+        Возвращает абсолютный путь к директории, где хранятся сканы.
+        """
+        return os.path.join(settings.MEDIA_ROOT, 'scans')
 
     class Meta:
         verbose_name = 'Шаблон документа'

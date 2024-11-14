@@ -1,7 +1,11 @@
 import os
+import subprocess
 
 import pymupdf
+from django.conf import settings
 from docx2pdf import convert
+from PIL import Image
+from PyPDF2 import PdfMerger
 
 
 class Converter:
@@ -11,9 +15,26 @@ class Converter:
         # self.image_file = image_file
         self.temp_images = []  # Для хранения путей к временным изображениям
 
+    # def docx_to_pdf(self):
+    #     """Преобразование DOCX в PDF."""
+    #     convert(self.docx_file, self.pdf_file)
+
     def docx_to_pdf(self):
-        """Преобразование DOCX в PDF."""
-        convert(self.docx_file, self.pdf_file)
+        """Преобразование DOCX в PDF с использованием LibreOffice."""
+        try:
+            # Формируем команду для конвертации
+            command = [
+                'C:\\Program Files\\LibreOffice\\program\\soffice.exe',  # Путь к soffice.exe
+                '--headless', '--convert-to', 'pdf',
+                '--outdir', os.path.dirname(self.pdf_file),  # Указываем путь к каталогу для сохранения PDF
+                self.docx_file
+            ]
+
+            # Выполняем команду
+            subprocess.run(command, check=True)
+            print(f"Документ {self.docx_file} успешно конвертирован в PDF в {self.pdf_file}")
+        except subprocess.CalledProcessError as e:
+            print(f"Ошибка при конвертации: {e}")
 
     def pdf_to_bw(self, dpi=300):
         """Преобразование страниц PDF в черно-белые и создание PNG-файлов с заданным разрешением."""
@@ -30,15 +51,29 @@ class Converter:
         doc.close()
         return self.temp_images
 
-    def pngs_to_pdf(self, output_pdf, png_files):
-        """Создание нового PDF-файла из существующих PNG-файлов с размером страниц A4."""
+    def pngs_to_pdf(self, output_pdf, image_files):
+        """Создание нового PDF-файла из существующих изображений (PNG, JPEG) с размером страниц A4."""
         A4_WIDTH = 595  # Ширина A4 в пунктах
         A4_HEIGHT = 842  # Высота A4 в пунктах
 
         doc = pymupdf.open()  # Создаем новый PDF-документ
 
-        for png_file in png_files:
-            img = pymupdf.open(png_file)  # Открываем PNG-файл
+        for image_file in image_files:
+            # Проверяем формат файла (PNG или JPEG)
+            file_extension = image_file.lower().split('.')[-1]
+
+            if file_extension in ['jpeg', 'jpg']:
+                # Конвертируем JPEG в PNG
+                with Image.open(image_file) as img:
+                    # Преобразуем изображение в PNG
+                    png_path = image_file + '.png'
+                    img.save(png_path, 'PNG')
+
+                    # Используем полученный PNG для вставки в PDF
+                    image_file = png_path
+
+            # Открываем изображение с помощью pymupdf
+            img = pymupdf.open(image_file)
             rect = img[0].rect  # Получаем размеры изображения
 
             # Определяем коэффициенты масштабирования для ширины и высоты
@@ -54,9 +89,14 @@ class Converter:
             pdf_page = doc.new_page(width=A4_WIDTH, height=A4_HEIGHT)
 
             # Вставляем масштабированное изображение на страницу
-            pdf_page.insert_image(pymupdf.Rect(0, 0, new_width, new_height), filename=png_file)
+            pdf_page.insert_image(pymupdf.Rect(0, 0, new_width, new_height), filename=image_file)
 
-        doc.save(output_pdf)  # Сохраняем новый PDF
+            # Если файл был временно конвертирован в PNG, удаляем его
+            if file_extension in ['jpeg', 'jpg']:
+                os.remove(png_path)
+
+        # Сохраняем новый PDF
+        doc.save(output_pdf)
         doc.close()
 
 
@@ -114,24 +154,62 @@ class Converter:
         # Вставляем изображение для последующих страниц в левый верхний угол
         last_page.insert_image(pymupdf.Rect(0, last_page.rect.height - last_img_height, last_img_width, last_page.rect.height), filename=last_page_image)
 
-        doc.save("output.pdf", incremental=True, encryption=0)  # Сохраняем изменения
+        doc.save(self.pdf_file, incremental=True, encryption=0)  # Сохраняем изменения
         doc.close()
 
+    def add_last_page_scan(self, last_page_scan):
+        """
+        Добавляет скан последней страницы в конец существующего PDF-документа.
+        Если last_page_scan - это изображение (PNG или JPEG), оно конвертируется в PDF.
+        Если это уже PDF, объединяет его с текущим PDF.
+        """
+
+        # Получаем полный путь к файлу, используя MEDIA_ROOT
+        file_extension = last_page_scan.name.lower().split('.')[-1]
+        image_path = os.path.join(settings.MEDIA_ROOT, last_page_scan.name)
+
+
+        # Путь для временного PDF, который будет сохранен в директории 'media/output'
+        temp_pdf_path = os.path.join(settings.BASE_DIR, 'media', f'{last_page_scan.name}.pdf')
+        print('file_extension =', file_extension)
+        print('image_path =', image_path)
+        print('temp_pdf_path =', temp_pdf_path)
+        print('last_page_scan.name =', last_page_scan.name)
+        # Убедитесь, что директория для временного PDF существует
+        os.makedirs(os.path.dirname(temp_pdf_path), exist_ok=True)
+
+        # Путь к временному PDF
+        if file_extension in ['png', 'jpeg', 'jpg']:
+            # Конвертируем изображение в PDF с помощью метода pngs_to_pdf
+            self.pngs_to_pdf(temp_pdf_path, [image_path])  # Конвертируем изображение в PDF
+        elif file_extension == 'pdf':
+            temp_pdf_path = image_path
+
+        # Объединяем существующий PDF с последней страницей
+        merger = PdfMerger()
+        merger.append(self.pdf_file)  # Добавляем оригинальный PDF
+        merger.append(temp_pdf_path)  # Добавляем новый PDF (скан последней страницы)
+        merger.write(self.pdf_file)  # Перезаписываем исходный PDF
+        merger.close()
+
+        # Удаляем временный PDF, если он был создан
+        os.remove(temp_pdf_path)
 
 
     @staticmethod
     def compress_pdf(input_pdf, output_pdf, compress_level=2):
         # Задаем параметры сжатия для Ghostscript
-        from pdf_compressor import compress
+        # from pdf_compressor import compress
+        from scanner.pdf_compressor import compress
         compress(input_pdf, output_pdf)
 
 
 # Пример использования:
-converter = Converter("test.docx", "output.pdf") #, "image.png")
-converter.docx_to_pdf()  # Преобразуем DOCX в PDF
-temp_images = converter.pdf_to_bw()  # Преобразуем PDF в черно-белый и получаем пути к изображениям
-print("Созданные изображения:", temp_images)
-converter.pngs_to_pdf("output.pdf", temp_images)
-converter.add_image_to_pdf("Красная лента. Первая страница.png", "Уголок с красной лентой.png", "Подпись переводчика.png")  # Добавляем изображение на каждую страницу
-converter.clean_temp_images()  # Удаляем временные изображения
-converter.compress_pdf(input_pdf='output.pdf', output_pdf='compressed_output.pdf')
+# converter = Converter("test.docx", "output.pdf") #, "image.png")
+# converter.docx_to_pdf()  # Преобразуем DOCX в PDF
+# temp_images = converter.pdf_to_bw()  # Преобразуем PDF в черно-белый и получаем пути к изображениям
+# print("Созданные изображения:", temp_images)
+# converter.pngs_to_pdf("output.pdf", temp_images)
+# converter.add_image_to_pdf("Красная лента. Первая страница.png", "Уголок с красной лентой.png", "Подпись переводчика.png")  # Добавляем изображение на каждую страницу
+# converter.clean_temp_images()  # Удаляем временные изображения
+# converter.compress_pdf(input_pdf='output.pdf', output_pdf='compressed_output.pdf')
