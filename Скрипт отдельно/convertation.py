@@ -60,14 +60,18 @@ class Converter:
         doc.close()
 
 
-    def clean_temp_images(self):
+    def clean_temp_files(self):
         """Удаление временных изображений."""
         for img in self.temp_images:
             if os.path.exists(img):
                 os.remove(img)
         self.temp_images.clear()
+        if os.path.exists("temp.pdf"):
+            os.remove("temp.pdf")
 
-    def add_image_to_pdf(self, first_page_image, other_pages_image, last_page_image):
+    def add_image_to_pdf(
+        self, output_path, first_page_image,
+        other_pages_image, last_page_image=None):
         """Добавление изображений на страницы PDF."""
         doc = pymupdf.open(self.pdf_file)
 
@@ -100,24 +104,32 @@ class Converter:
 
         print('other_img_width =', other_img_width, 'other_img_height =', other_img_height)
         # Вставляем изображения на последнюю страницу
-        last_page = doc.load_page(doc.page_count - 1)
-        last_img = pymupdf.open(last_page_image)
+        if last_page_image:
+            last_page = doc.load_page(doc.page_count - 1)
+            last_img = pymupdf.open(last_page_image)
 
-        # last_img_width = last_img[0].rect.width
-        # last_img_height = last_img[0].rect.height
-        last_img_width = 595
-        last_img_height = 84
+            # last_img_width = last_img[0].rect.width
+            # last_img_height = last_img[0].rect.height
+            last_img_width = 595
+            last_img_height = 84
 
-        print('last_img_width =', last_img_width, 'last_img_height =', last_img_height)
-        print('last_page.rect.width =', last_page.rect.width, 'last_page.rect.height =', last_page.rect.height)
+            print('last_img_width =', last_img_width, 'last_img_height =', last_img_height)
+            print('last_page.rect.width =', last_page.rect.width, 'last_page.rect.height =', last_page.rect.height)
 
-        # Вставляем изображение для последующих страниц в левый верхний угол
-        last_page.insert_image(pymupdf.Rect(0, last_page.rect.height - last_img_height, last_img_width, last_page.rect.height), filename=last_page_image)
+            # Вставляем изображение для последующих страниц в левый верхний угол
+            last_page.insert_image(pymupdf.Rect(0, last_page.rect.height - last_img_height, last_img_width, last_page.rect.height), filename=last_page_image)
 
-        doc.save("Скрипт отдельно/output.pdf", incremental=True, encryption=0)  # Сохраняем изменения
+        doc.save(output_path, incremental=True, encryption=0)  # Сохраняем изменения
         doc.close()
 
-
+    def merge_pdf(self, first_file, second_file, output_path):
+        pdf_writer = pymupdf.open()
+        for pdf in [first_file, second_file]:
+            pdf_document = pymupdf.open(pdf)
+            pdf_writer.insert_pdf(pdf_document)
+            pdf_document.close()
+        pdf_writer.save(output_path)
+        pdf_writer.close()
 
     @staticmethod
     def compress_pdf(input_pdf, output_pdf, compress_level=2):
@@ -127,15 +139,25 @@ class Converter:
 
 
 # Пример использования:
-converter = Converter("Скрипт отдельно/Справка из школы_2024-2025.docx", "Скрипт отдельно/output.pdf") #, "image.png")
+file_path = "Скрипт отдельно/Иран пасп. ДЖАХАНХАХ САРА.docx"
+output_path = "Temp.pdf"
+final_output_path = file_path.replace("docx", "pdf")
+converter = Converter(file_path, output_path) #, "image.png")
 converter.docx_to_pdf()  # Преобразуем DOCX в PDF
 temp_images = converter.pdf_to_bw()  # Преобразуем PDF в черно-белый и получаем пути к изображениям
 print("Созданные изображения:", temp_images)
+
 # temp_images.append('Скрипт отдельно/Page_00007.jpg')
-converter.pngs_to_pdf("Скрипт отдельно/output.pdf", temp_images)
-converter.add_image_to_pdf(
+converter.pngs_to_pdf(output_path, temp_images[:-1])
+converter.add_image_to_pdf(output_path,
     "Скрипт отдельно/doc_decorations/Красная лента. Первая страница.png",
     "Скрипт отдельно/doc_decorations/Уголок с красной лентой.png",
-    "Скрипт отдельно/doc_decorations/Подпись переводчика.png")  # Добавляем изображение на каждую страницу
-converter.clean_temp_images()  # Удаляем временные изображения
-converter.compress_pdf(input_pdf='Скрипт отдельно/output.pdf', output_pdf='Скрипт отдельно/compressed_output.pdf')
+    # "Скрипт отдельно/doc_decorations/Подпись переводчика.png"
+    )  # Добавляем изображение на каждую страницу
+last_page = "Scan7479.pdf"
+if not last_page.endswith(".pdf"):
+    converter.pngs_to_pdf("Скрипт отдельно/last_page.pdf", [last_page])
+    last_page = "Скрипт отдельно/last_page.pdf"
+converter.merge_pdf(output_path, last_page, output_path)
+converter.compress_pdf(input_pdf=output_path, output_pdf=final_output_path)
+converter.clean_temp_files()  # Удаляем временные изображения
