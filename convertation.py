@@ -1,4 +1,7 @@
+import datetime
 import os
+import sys
+from time import sleep
 
 import pymupdf
 from docx2pdf import convert
@@ -73,6 +76,12 @@ class Converter:
         if os.path.exists("last_page.pdf"):
             os.remove("last_page.pdf")
 
+    @staticmethod
+    def resource_path(relative_path):
+        """Получение абсолютного пути к ресурсу, работает как в dev, так и в bundled режиме."""
+        base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
+        return os.path.join(base_path, relative_path)
+
     def add_image_to_pdf(
         self, output_path, first_page_image,
         other_pages_image, mode=0, translator_sign=None):
@@ -140,6 +149,7 @@ class Converter:
             pdf_document.close()
         pdf_writer.save(output_path)
         pdf_writer.close()
+        os.remove(second_file)
 
     @staticmethod
     def compress_pdf(input_pdf, output_pdf, compress_level=2):
@@ -152,6 +162,7 @@ def find_file_path(files, extensions, mode):
         print(
             f"В папке с исполняемым файлом нет файла с "
             f"расширени{('ем', 'ями')[option]} {', '.join(extensions)}")
+        input("Поместите файл с нужным расширением в папку с программой, нажмите любую клавишу, а затем Enter, чтобы продолжить\n")
         return
     elif len(files) > 1:
         message = ('Введите номер, соответствующий названию файла, который надо отсканировать',
@@ -190,6 +201,7 @@ def process_scan():
         "blue": ("doc_decorations/Синяя лента. Первая страница.png",
                  "doc_decorations/Уголок с синей лентой.png")
     }
+
     try:
         decorations_set = doc_decorations["red"] # цвет ленты по умолчанию красный
         pages = "all" # по умолчанию сканируются все страницы
@@ -229,7 +241,6 @@ def process_scan():
         else:
             print('Вы ввели неправильное число, придётся начать сначала')
             return
-        print(user_input)
         files = [f for f in all_files if f.split('.')[-1] in ("png", "pdf", "jpeg", "jpg")]
         last_page = find_file_path(files, ["png", "pdf", "jpeg", "jpg"], mode=1)
         output_path = "Temp.pdf"
@@ -241,13 +252,13 @@ def process_scan():
             temp_images = [temp_images[index] for index in pages]
 
         converter.pngs_to_pdf(output_path, temp_images)
-        args = [*decorations_set]
+        args = [*[converter.resource_path(file) for file in decorations_set]]
 
         # Добавляем переменную mode для правильной настройки размеров вставляемых изображений
         args.append(decorations_set == doc_decorations["blue"])
 
         if need_sign_translator:
-            args.append("doc_decorations/Подпись переводчика.png")
+            args.append(converter.resource_path("doc_decorations/Подпись переводчика.png"))
         converter.add_image_to_pdf(output_path, *args)
 
         if last_page:
@@ -256,17 +267,25 @@ def process_scan():
                 last_page = "last_page.pdf"
             converter.merge_pdf(output_path, last_page, output_path)
         converter.compress_pdf(input_pdf=output_path, output_pdf=final_output_path)
+        print("Завершили сжатие")
         converter.clean_temp_files()  # Удаляем временные изображения
 
         if os.path.exists("acrobat_path.txt"):
-        # Открываем файл для чтения
+            print('Проверяем наличие файла acrobat_path.txt')
+            # Открываем файл для чтения
             with open("acrobat_path.txt", "r", encoding="utf-8") as file:
+                print('Открыли файл')
                 acrobat_path, page = [row.strip() for row in file.readlines()]
                 acrobat_path = fr"{acrobat_path}"
+                print("Успешно получили:", acrobat_path, page)
         else:
+            print("Запускаем открытие файла")
             acrobat_path = r"C:\Program Files\Adobe\Acrobat DC\Acrobat\Acrobat.exe"
             page = 1
-        os.system(f'start "" "{acrobat_path}" /A "page={page}" "{final_output_path}"')
+        try:
+            os.system(f'start "" "{acrobat_path}" /A "page={page}" "{final_output_path}"')
+        except Exception as error:
+            print(error)
         return True
     except Exception as error:
         print("При выполнении программы возникла ошибка:", error)
@@ -277,8 +296,15 @@ def main():
         answer = process_scan()
         if answer is not None:
             print("Программа завершена")
+            print("\nНе забудьте продлить подписку до 31 декабря 2025 года.")
+            sleep(10)
             break
 
 
 if __name__ == '__main__':
-	main()
+    current_year = datetime.datetime.now().year
+    if current_year < 2026:
+        print("Ваша подписка действует до 31 декабря 2025 года.")
+        main()
+    else:
+        print("Ваша подписка истекла 1 января 2026 года. Свяжитесь с разработчиком, чтобы продлить подписку.")
