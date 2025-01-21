@@ -326,6 +326,8 @@ def process_scan(settings):
 
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import ttk
+
 
 
 def scan(settings):
@@ -352,6 +354,7 @@ def update_mode():
         custom_frame.grid_forget()
 
 win = tk.Tk()
+ttk.Style().theme_use("classic")
 win.title("Сканирование")
 win.geometry("500x500")
 win.resizable(False, False)

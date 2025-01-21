@@ -1,0 +1,26 @@
+pyinstaller --onefile \
+--add-data "doc_decorations/Красная лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с красной лентой.png;doc_decorations" \
+--add-data "doc_decorations/Синяя лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с синей лентой.png;doc_decorations" \
+--add-data "doc_decorations/Подпись переводчика.png;doc_decorations" \
+ScanItEasy.py
+
+pyinstaller --onefile \
+--add-data "doc_decorations/Красная лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с красной лентой.png;doc_decorations" \
+--add-data "doc_decorations/Синяя лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с синей лентой.png;doc_decorations" \
+--add-data "doc_decorations/Подпись переводчика.png;doc_decorations" \
+ScanItEasy.py
+
+pyinstaller --onefile --noconsole \
+--add-data "doc_decorations/Красная лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с красной лентой.png;doc_decorations" \
+--add-data "doc_decorations/Синяя лента. Первая страница.png;doc_decorations" \
+--add-data "doc_decorations/Уголок с синей лентой.png;doc_decorations" \
+--add-data "doc_decorations/Подпись переводчика.png;doc_decorations" \
+ScanItEasy.py
+
+Added graphical interface for the scanning program using Tkinter. Now it can be compiled into an exe file without a console window.
+

@@ -1,19 +1,16 @@
-import asyncio
-import sys
-from io import StringIO
 
-async def main():
-    print("Введите что-то (ожидание 2 секунды):")
-    try:
-        user_input = await asyncio.wait_for(asyncio.to_thread(input), timeout=2)
-    except asyncio.TimeoutError:
-        # Сымитируем ввод, чтобы программа получила значение
-        sys.stdin = StringIO("значение по умолчанию\n")
-        user_input = input()
+import pymupdf
 
-    print(f"Вы ввели: {user_input}")
+def merge_pdf(files, output_path, remove=False):
+        """Объединение нескольких PDF файлов."""
+        pdf_writer = pymupdf.open()
+        for pdf in files:
+            pdf_document = pymupdf.open(pdf)
+            pdf_writer.insert_pdf(pdf_document)
+            pdf_document.close()
+        pdf_writer.save(output_path)
+        pdf_writer.close()
 
-    num = input("введи число\n")
-    print(num)
-
-asyncio.run(main())
+merge_pdf(
+      ["Мед карта ребенка Иран.pdf", "Scan7479.pdf", "Scan7478.pdf"], "output.pdf"
+)
