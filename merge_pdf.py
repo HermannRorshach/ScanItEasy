@@ -279,6 +279,7 @@ class GraphicalEditor(ctk.CTk):
                 self.flag = True
 
     def merge(self):
+        self.check_block()
         if not self.check_all_entries_valid():
             return
         data = {
