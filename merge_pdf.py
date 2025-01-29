@@ -3,6 +3,8 @@ import customtkinter as ctk
 from tkinter import filedialog
 import tkinter as tk
 import logging
+# from modes import ModesWindow
+
 
 # Настройка логирования
 logging.basicConfig(
@@ -15,9 +17,9 @@ logging.basicConfig(
 )
 
 
-class GraphicalEditor(ctk.CTk):
-    def __init__(self):
-        super().__init__()
+class GraphicalEditor(ctk.CTk):  # Оставляем наследование от CTk, чтобы быть окном
+    def __init__(self, master=None):  # Добавляем master как аргумент конструктора
+        super().__init__(master)  # Передаем master в CTk
         ctk.set_appearance_mode('dark')
         ctk.set_default_color_theme('green')
         self.title("ScanItEasy")
@@ -41,25 +43,25 @@ class GraphicalEditor(ctk.CTk):
     def create_widgets(self):
 
         # Кнопка "Назад"
-        dark_image = tk.PhotoImage(file="dark.png")
-        light_image = tk.PhotoImage(file="light.png")
+        # dark_image = tk.PhotoImage(file="dark.png")
+        # light_image = tk.PhotoImage(file="light.png")
 
-        def on_hover(event):
-            back_button.config(image=dark_image)
+        # def on_hover(event):
+        #     back_button.config(image=dark_image)
 
-        def on_leave(event):
-            back_button.config(image=light_image)
+        # def on_leave(event):
+        #     back_button.config(image=light_image)
 
         back_button = tk.Button(
-            self, image=light_image, text="Назад", font=("Arial", 14, "normal"),
+            self, text="Назад", font=("Arial", 14, "normal"),
             fg="white", padx=10, pady=10, bg=self["bg"], activebackground=self["bg"],
-            borderwidth=0, command=lambda: print("modes"), compound="left", relief="flat"
+            borderwidth=0, command=self.on_back_button_click, compound="left", relief="flat"
         )
 
         back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")
 
-        back_button.bind("<Enter>", on_hover)
-        back_button.bind("<Leave>", on_leave)
+        # back_button.bind("<Enter>", on_hover)
+        # back_button.bind("<Leave>", on_leave)
 
         # Заголовок
         header_label = ctk.CTkLabel(self, text="Объединить два или более pdf-файлов",
@@ -89,6 +91,15 @@ class GraphicalEditor(ctk.CTk):
 
         # Привязываем обработчик события клика по окну для проверки всех полей
         self.bind("<Button-1>", self.on_click)
+
+    def on_back_button_click(self):
+        # Закрываем текущее окно (GraphicalEditor) при нажатии кнопки
+        self.destroy()
+
+        # Создаем и показываем окно ModesWindow
+        self.master = ModesWindow(self)  # Передаем master как родительское окно
+        self.master.pack(fill="both", expand=True)
+
 
     def on_click(self, event):
         """Проверяем все поля ввода при клике в любое место окна"""
@@ -295,7 +306,6 @@ class GraphicalEditor(ctk.CTk):
         self.progress_bar.grid(row=1001, column=0, pady=5, padx=70, sticky="w")
         print(data)
         return data
-
 
 
 if __name__ == "__main__":

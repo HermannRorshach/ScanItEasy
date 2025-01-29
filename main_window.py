@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from tkinter import filedialog
-from merge_pdf import GraphicalEditor
+
 
 ctk.set_appearance_mode('dark')
 ctk.set_default_color_theme('green')
@@ -17,17 +17,6 @@ win.minsize(300, 300)
 win.title("ScanItEasy")
 padx = 70
 current_mode = "modes"
-
-# Функция для перехода ко второму окну
-def open_merge_pdf_window():
-    win.withdraw()  # Скрыть главное окно
-    merge_pdf_window = GraphicalEditor(return_to_main_window)  # Создаем окно из второго модуля
-    merge_pdf_window.mainloop()  # Запускаем mainloop второго окна
-
-# Функция для возвращения в главное окно
-def return_to_main_window():
-    win.deiconify()  # Восстановить главное окно
-    # Можно обновить состояние, если это необходимо
 
 
 # Создаём все элементы программы
