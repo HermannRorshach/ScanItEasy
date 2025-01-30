@@ -30,25 +30,25 @@ class GraphicalEditor(ctk.CTk):  # Оставляем наследование �
     def create_widgets(self):
 
         # Кнопка "Назад"
-        # dark_image = tk.PhotoImage(file="dark.png")
-        # light_image = tk.PhotoImage(file="light.png")
+        dark_image = tk.PhotoImage(file="dark.png")
+        light_image = tk.PhotoImage(file="light.png")
 
-        # def on_hover(event):
-        #     back_button.config(image=dark_image)
+        def on_hover(event):
+            back_button.config(image=dark_image)
 
-        # def on_leave(event):
-        #     back_button.config(image=light_image)
+        def on_leave(event):
+            back_button.config(image=light_image)
 
         back_button = tk.Button(
-            self, text="Назад", font=("Arial", 14, "normal"),
+            self, image=light_image, text="Назад", font=("Arial", 14, "normal"),
             fg="white", padx=10, pady=10, bg=self["bg"], activebackground=self["bg"],
             borderwidth=0, command=self.on_back_button_click, compound="left", relief="flat"
         )
 
         back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")
 
-        # back_button.bind("<Enter>", on_hover)
-        # back_button.bind("<Leave>", on_leave)
+        back_button.bind("<Enter>", on_hover)
+        back_button.bind("<Leave>", on_leave)
 
         # Заголовок
         header_label = ctk.CTkLabel(self, text="Объединить два или более pdf-файлов",
@@ -304,48 +304,23 @@ current_mode = "modes"
 
 padx = 70
 
+# Инициализируем словари с данными глобально
+elements = mode_settings = user_input = None
+
 # Глобальные переменные для виджетов
 mode_var = None
-mode_label = None
-default_mode = None
-custom_mode = None
-additionally_label = None
-convert_to_pdf = None
-merge_pdf = None
-grayscale_mode = None
-compress_mode = None
-convert_to_png = None
-back_button = None
-dark_image = None
-light_image = None
-header_label = None
-btn_file_docx = None
-docx_label = None
-invalid_docx_label = None
-invalid_last_page_label = None
-progress_label = None
-progress_bar = None
-conditions_message_label = None
-btn_to_work = None
-color_var = None # ctk.IntVar(value=0)
-color_label = None
-red = None
-blue = None
-pages_label = None
-text_help_label = None
-pages = None
-invalid_pages_label = None
-signature_var = None
-signature_label = None
-signature_yes = None
-signature_no = None
-is_compression_needed = None
-is_compression_needed_checkbox = None
-btn_file_pdf = None
-pdf_label = None
-invalid_pdf_label = None
-last_page_label = None
+mode_label = default_mode = custom_mode = additionally_label = None
+convert_to_pdf = merge_pdf = grayscale_mode = compress_mode = convert_to_png = None
+back_button = dark_image = light_image = header_label = None
+btn_file_docx = docx_label = invalid_docx_label = invalid_last_page_label = None
+progress_label = progress_bar = conditions_message_label = 3
+btn_to_work = color_var = color_label = red = blue = None
+pages_label = text_help_label = pages = invalid_pages_label = None
+signature_var = signature_label = signature_yes = signature_no = None
+is_compression_needed = is_compression_needed_checkbox = None
+btn_file_pdf = pdf_label = invalid_pdf_label = last_page_label = None
 btn_file_last_page = None
+
 
 
 class ModesWindow(ctk.CTkFrame):
@@ -382,6 +357,7 @@ def create_widgets():
     global invalid_pages_label, signature_var, signature_label, signature_yes, signature_no
     global is_compression_needed, is_compression_needed_checkbox, btn_file_pdf, pdf_label, invalid_pdf_label
     global mode_var, color_var, signature_var, is_compression_needed, btn_file_last_page, last_page_label
+    global elements, mode_settings, user_input
     # Переменные
     mode_var = ctk.StringVar(value="modes")
     color_var = ctk.IntVar(value=0)
@@ -393,28 +369,28 @@ def create_widgets():
     mode_label.grid(row=0, column=0, padx=70, pady=15, sticky="w")
 
     # имы
-    default_mode = ctk.CTkRadioButton(win, text="Режим по умолчанию", variable=mode_var, value="default_mode", command=lambda: update_elements(self.mode_var.get()))
+    default_mode = ctk.CTkRadioButton(win, text="Режим по умолчанию", variable=mode_var, value="default_mode", command=lambda: update_elements(mode_var.get()))
     default_mode.grid(row=1, column=0, padx=70, pady=5, sticky="w")
 
-    custom_mode = ctk.CTkRadioButton(win, text="Пользовательский режим с настройками", variable=mode_var, value="custom_mode", command=lambda: update_elements(self.mode_var.get()))
+    custom_mode = ctk.CTkRadioButton(win, text="Пользовательский режим с настройками", variable=mode_var, value="custom_mode", command=lambda: update_elements(mode_var.get()))
     custom_mode.grid(row=2, column=0, padx=70, pady=5, sticky="w")
 
     additionally_label = ctk.CTkLabel(win, text="Дополнительно:", font=("Arial", 12, "italic"), justify='center')
     additionally_label.grid(row=3)
 
-    convert_to_pdf = ctk.CTkRadioButton(win, text="Конвертировать docx в pdf", variable=mode_var, value="convert_to_pdf_mode", command=lambda: update_elements(self.mode_var.get()))
+    convert_to_pdf = ctk.CTkRadioButton(win, text="Конвертировать docx в pdf", variable=mode_var, value="convert_to_pdf_mode", command=lambda: update_elements(mode_var.get()))
     convert_to_pdf.grid(row=4, column=0, padx=70, pady=5, sticky="w")
 
-    merge_pdf = ctk.CTkRadioButton(win, text="Объединить два или несколько pdf", variable=mode_var, value="merge_pdf_mode", command=on_merge_pdf_button_click)
+    merge_pdf = ctk.CTkRadioButton(win, text="Объединить два или несколько pdf", variable=mode_var, value="merge_pdf_mode", command=lambda: on_merge_pdf_button_click(obj))
     merge_pdf.grid(row=5, column=0, padx=70, pady=5, sticky="w")
 
-    grayscale_mode = ctk.CTkRadioButton(win, text="Сделать pdf чёрно-белым", variable=mode_var, value="grayscale_mode", command=lambda: update_elements(self.mode_var.get()))
+    grayscale_mode = ctk.CTkRadioButton(win, text="Сделать pdf чёрно-белым", variable=mode_var, value="grayscale_mode", command=lambda: update_elements(mode_var.get()))
     grayscale_mode.grid(row=6, column=0, padx=70, pady=5, sticky="w")
 
-    compress_mode = ctk.CTkRadioButton(win, text="Сжать pdf", variable=mode_var, value="compress_mode", command=lambda: update_elements(self.mode_var.get()))
+    compress_mode = ctk.CTkRadioButton(win, text="Сжать pdf", variable=mode_var, value="compress_mode", command=lambda: update_elements(mode_var.get()))
     compress_mode.grid(row=7, column=0, padx=70, pady=5, sticky="w")
 
-    convert_to_png = ctk.CTkRadioButton(win, text="Конвертировать pdf в png", variable=mode_var, value="convert_to_png_mode", command=lambda: update_elements(self.mode_var.get()))
+    convert_to_png = ctk.CTkRadioButton(win, text="Конвертировать pdf в png", variable=mode_var, value="convert_to_png_mode", command=lambda: update_elements(mode_var.get()))
     convert_to_png.grid(row=8, column=0, padx=70, pady=5, sticky="w")
 
     # пка Назад
@@ -429,70 +405,67 @@ def create_widgets():
         fg="white",
         padx=10,
         pady=10,
-        # bg=win["bg"],  # Цвет фона кнопки подстраивается под фон окна
-        # activebackground=win["bg"],  # Цвет фона кнопки при наведении
+        bg=win["bg"],  # Цвет фона кнопки подстраивается под фон окна
+        activebackground=win["bg"],  # Цвет фона кнопки при наведении
         borderwidth=0,  # Убираем рамку
         command=lambda: update_elements("modes"),
         compound="left",
         relief="flat"
     )
-    back_button.grid(row=9, column=0, padx=70, pady=5, sticky="w")
+
+    def on_hover(event):
+        back_button.config(image=dark_image)
+
+    def on_leave(event):
+        back_button.config(image=light_image)
 
     # кции для обработки кнопки назад
-    # back_button.bind("<Enter>", on_hover)
-    # back_button.bind("<Leave>", on_leave)
+    back_button.bind("<Enter>", on_hover)
+    back_button.bind("<Leave>", on_leave)
 
     # им по умолчанию
     header_label = ctk.CTkLabel(win, text="Режим по умолчанию")
-    header_label.grid(row=10, column=0, padx=70, pady=5, sticky="w")
 
-    btn_file_docx = ctk.CTkButton(win, text="Выберите файл для сканирования", command=lambda: update_file_label(self.docx_label, ["docx"], self.invalid_docx_label))
-    btn_file_docx.grid(row=11, column=0, padx=70, pady=5, sticky="w")
+    btn_file_docx = ctk.CTkButton(win, text="Выберите файл для сканирования", command=lambda: update_file_label(docx_label, ["docx"], invalid_docx_label))
 
     docx_label = ctk.CTkLabel(win, text=None)
-    docx_label.grid(row=12, column=0, padx=70, pady=5, sticky="w")
 
     invalid_docx_label = ctk.CTkLabel(win, text="Файл должен быть формата docx", text_color="red", padx=20)
-    invalid_docx_label.grid(row=13, column=0, padx=70, pady=5, sticky="w")
 
     # ьзовательский режим с настройками
     color_label = ctk.CTkLabel(win, text="Выберите цвет ленточки")
-    color_label.grid(row=14, column=0, padx=70, pady=5, sticky="w")
 
     red = ctk.CTkRadioButton(win, text="Красный", variable=color_var, value=0, command=lambda: print("Цвет ленты: красный"))
-    red.grid(row=15, column=0, padx=70, pady=5, sticky="w")
 
     blue = ctk.CTkRadioButton(win, text="Синий", variable=color_var, value=1, command=lambda: print("Цвет ленты: Синий"))
-    blue.grid(row=16, column=0, padx=70, pady=5, sticky="w")
 
     pages_label = ctk.CTkLabel(win, text="Выберите страницы")
-    pages_label.grid(row=17, column=0, padx=70, pady=5, sticky="w")
 
     text_help_label = ctk.CTkLabel(win, text="Если нужны все страницы, оставьте поле пустым", font=("Arial", 12, "italic"), text_color="green", justify='center')
-    text_help_label.grid(row=18, column=0, padx=70, pady=5, sticky="w")
 
-    pages = ctk.CTkEntry(win, placeholder_text="Введите номера страниц через запятую и/или диапазон страниц через дефис", width=470, corner_radius=10, font=("Arial", 12))
-    pages.grid(row=19, column=0, padx=70, pady=5, sticky="w")
+    pages = ctk.CTkEntry(win,
+                     placeholder_text="Введите номера страниц через запятую и/или диапазон страниц через дефис",   # Текст-подсказка
+                     fg_color="lightgray",                # Цвет фона
+                     placeholder_text_color="Gray",
+                     text_color="black",                  # Цвет текста
+                     width=470,                           # Ширина поля
+                     corner_radius=10,                    # Скругленные углы
+                     font=("Arial", 12),                   # Шрифт текста
+                     )
 
     invalid_pages_label = ctk.CTkLabel(win, text="Введите номера страниц через запятую и/или диапазон страниц через дефис", text_color="red", padx=20)
-    invalid_pages_label.grid(row=20, column=0, padx=70, pady=5, sticky="w")
 
     signature_label = ctk.CTkLabel(win, text="Нужна ли подпись переводчика?")
-    signature_label.grid(row=21, column=0, padx=70, pady=5, sticky="w")
 
     signature_yes = ctk.CTkRadioButton(win, text="Да", variable=signature_var, value=1, command=lambda: print("Подпись переводчика нужна"))
-    signature_yes.grid(row=22, column=0, padx=70, pady=5, sticky="w")
 
     signature_no = ctk.CTkRadioButton(win, text="Нет", variable=signature_var, value=0, command=lambda: print("Подпись переводчика не нужна"))
-    signature_no.grid(row=23, column=0, padx=70, pady=5, sticky="w")
 
     # им конвертации из docx в pdf
     is_compression_needed_checkbox = ctk.CTkCheckBox(win, text="Сжать итоговый pdf", variable=is_compression_needed)
-    is_compression_needed_checkbox.grid(row=24, column=0, padx=70, pady=5, sticky="w")
 
     # пка для выбора файла pdf
     btn_file_pdf = ctk.CTkButton(win, text="Выберите pdf-файл", command=lambda: update_file_label(pdf_label, ["pdf"], invalid_pdf_label))
-    btn_file_pdf.grid(row=25, column=0, padx=70, pady=5, sticky="w")
 
     btn_file_last_page = ctk.CTkButton(
         win, text="Выберите файл для последней части документа",
@@ -502,279 +475,277 @@ def create_widgets():
     last_page_label = ctk.CTkLabel(win, text=None)
 
     pdf_label = ctk.CTkLabel(win, text=None)
-    pdf_label.grid(row=26, column=0, padx=70, pady=5, sticky="w")
 
     invalid_pdf_label = ctk.CTkLabel(win, text="Файл должен быть формата pdf", text_color="red", padx=20)
-    invalid_pdf_label.grid(row=27, column=0, padx=70, pady=5, sticky="w")
 
-    def on_hover(self, event):
-        back_button.config(image=dark_image)
+    invalid_last_page_label = ctk.CTkLabel(win, text="Файл должен быть формата pdf, jpeg, jpg или png", text_color="red", padx=20)
 
-    def on_leave(self, event):
-        back_button.config(image=light_image)
+    btn_to_work = ctk.CTkButton(win, fg_color="red",  # Основной цвет кнопки
+                                hover_color="#8B0000", text="Сканировать", command=lambda: work())
+    conditions_message_label = ctk.CTkLabel(win, text="Для запуска сканирования нужно выбрать файл в формате docx", text_color="red", padx=20)
+    progress_label = ctk.CTkLabel(win, text="0%")
+    progress_bar = ctk.CTkProgressBar(win, width=300, height=25)
 
     # Привязка события для проверки при клике на любое место
     win.bind("<Button-1>", on_click)  # Привязка на клик по окну
     pages.bind("<FocusOut>", on_validate)
 
+    elements = {
+        "modes": {mode_label: 'mode_label.grid(row=0, column=0, padx=padx, pady=15, sticky="w")',
+                default_mode: 'default_mode.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+                custom_mode: 'custom_mode.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+                additionally_label: "additionally_label.grid(row=3)",
+                convert_to_pdf: 'convert_to_pdf.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
+                merge_pdf: 'merge_pdf.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
+                grayscale_mode: 'grayscale_mode.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
+                compress_mode: 'compress_mode.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
+                convert_to_png: 'convert_to_png.grid(row=8, column=0, padx=padx, pady=5, sticky="w")'
+        },
+        "default_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")'
+                },
+                "next_step_elements": {
+                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=7, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (docx_label,)
+        },
+        "custom_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
+            color_label: 'color_label.grid(row=6, column=0, padx=padx, pady=10, sticky="w")',
+            red: 'red.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
+            blue: 'blue.grid(row=8, column=0, padx=padx, pady=(5, 15), sticky="w")',
+            pages_label: 'pages_label.grid(row=9, column=0, padx=padx, pady=0, sticky="w")',
+            text_help_label: 'text_help_label.grid(row=10, column=0, padx=padx, pady=0, sticky="w")',
+            pages: 'pages.grid(row=11, column=0, padx=padx, pady=5, sticky="w")',
+            signature_label: 'signature_label.grid(row=13, column=0, padx=padx, pady=5, sticky="w")',
+            signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
+            signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pages_label: 'invalid_pages_label.grid(row=12, column=0, pady=5, padx=padx, sticky="w")'
+                },
+                "next_step_elements": {
+                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=17, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (docx_label,),
+            "inhibitors": {
+                invalid_docx_label: "Для запуска сканирования нужно выбрать файл в формате docx",
+                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+        },
+        "convert_to_pdf_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
+            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
+            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
+            is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
+                },
+                "next_step_elements": {
+                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (docx_label,),
+            "inhibitors": {
+                invalid_docx_label: "Для конвертации нужно выбрать файл в формате docx",
+                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+        },
+        "grayscale_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
+            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
+            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
+            is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
+                },
+                "next_step_elements": {
+                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (pdf_label,),
+            "inhibitors": {
+                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",
+                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+        },
+        "compress_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                },
+                "next_step_elements": {
+                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (pdf_label,),
+            "inhibitors": {
+                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
+        },
+        "convert_to_png_mode": {
+            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
+            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
+            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "additional_elements": {
+                "error_messages": {
+                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                },
+                "next_step_elements": {
+                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
+                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
+                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
+                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                }
+            },
+            "work_conditions": (pdf_label,),
+            "inhibitors": {
+                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
+        },
+
+    }
+
+
+
+    mode_settings = {
+        "default_mode": {
+            header_label: "Режим по умолчанию",
+            btn_file_docx: "Выберите файл для сканирования",
+            btn_file_last_page: "Выберите файл для последней части документа",
+            btn_to_work: "Сканировать",
+            conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+        "custom_mode": {
+            header_label: "Пользовательский режим с настройками",
+            btn_file_docx: "Выберите файл для сканирования",
+            btn_file_last_page: "Выберите файл для последней части документа",
+            btn_to_work: "Сканировать",
+            conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+        "convert_to_pdf_mode": {
+            header_label: "Конвертация docx в pdf",
+            btn_file_docx: "Выберите файл для конвертации в pdf",
+            btn_to_work: "Конвертировать",
+            conditions_message_label: "Для конвертации нужно выбрать файл в формате docx"},
+        "grayscale_mode": {
+            header_label: "Сделать pdf чёрно-белым",
+            btn_file_pdf: "Выберите pdf-файл",
+            btn_to_work: "Изменить",
+            conditions_message_label: "Для изменения нужно выбрать файл в формате pdf"},
+        "compress_mode": {
+            header_label: "Сжать pdf",
+            btn_file_pdf: "Выберите pdf-файл",
+            btn_to_work: "Сжать",
+            conditions_message_label: "Для сжатия нужно выбрать файл в формате pdf"},
+        "convert_to_png_mode": {
+            header_label: "Конвертировать pdf в png",
+            btn_file_pdf: "Выберите pdf-файл",
+            btn_to_work: "Конвертировать",
+            conditions_message_label: "Для конвертации нужно выбрать файл в формате pdf"},
+
+    }
+
+    user_input = {
+        "default_mode": {
+            "docx_path": 'docx_label.cget("text")',
+            "last_page_path": 'last_page_label.cget("text")',
+            "color": '0',
+            "need_sign_translator": '1',
+            "is_compression_needed": '1',
+        },
+        "custom_mode": {
+            "docx_path": 'docx_label.cget("text")',
+            "last_page_path": 'last_page_label.cget("text")',
+            "color": 'color_var.get()',
+            "need_sign_translator": '1',
+            "pages": 'pages.get()',
+            "is_compression_needed": '1',
+        },
+        "convert_to_pdf_mode": {
+            "docx_path": 'docx_label.cget("text")',
+            "pages": 'pages.get()',
+            "is_compression_needed": 'is_compression_needed.get()',
+        },
+        "grayscale_mode": {
+            "pdf_path": 'pdf_label.cget("text")',
+            "is_compression_needed": 'is_compression_needed.get()',
+        },
+        "compress_mode": {
+            "pdf_path": 'pdf_label.cget("text")',
+            "is_compression_needed": '1',
+        },
+    }
 
 
 def on_merge_pdf_button_click(obj):
     # Закрываем текущее окно (ModesWindow) при нажатии кнопки
-    obj.master.destroy()
+    obj.app.destroy()
 
     # Открываем окно для объединения PDF (GraphicalEditor)
-    root = ctk.CTk()  # Главное окно
-    graphical_editor_window = GraphicalEditor(root)  # Создаем новое окно
+    graphical_editor_window = GraphicalEditor()  # Создаем новое окно
     graphical_editor_window.mainloop()  # Запускаем цикл событий нового окна
 
-
-
-
-elements = {
-    "modes": {mode_label: 'mode_label.grid(row=0, column=0, padx=padx, pady=15, sticky="w")',
-              default_mode: 'default_mode.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-              custom_mode: 'custom_mode.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-              additionally_label: "additionally_label.grid(row=3)",
-              convert_to_pdf: 'convert_to_pdf.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-              merge_pdf: 'merge_pdf.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
-              grayscale_mode: 'grayscale_mode.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-              compress_mode: 'compress_mode.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
-              convert_to_png: 'convert_to_png.grid(row=8, column=0, padx=padx, pady=5, sticky="w")'
-    },
-    "default_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")'
-            },
-            "next_step_elements": {
-                docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=7, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (docx_label,)
-    },
-     "custom_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-        color_label: 'color_label.grid(row=6, column=0, padx=padx, pady=10, sticky="w")',
-        red: 'red.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
-        blue: 'blue.grid(row=8, column=0, padx=padx, pady=(5, 15), sticky="w")',
-        pages_label: 'pages_label.grid(row=9, column=0, padx=padx, pady=0, sticky="w")',
-        text_help_label: 'text_help_label.grid(row=10, column=0, padx=padx, pady=0, sticky="w")',
-        pages: 'pages.grid(row=11, column=0, padx=padx, pady=5, sticky="w")',
-        signature_label: 'signature_label.grid(row=13, column=0, padx=padx, pady=5, sticky="w")',
-        signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
-        signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")',
-                invalid_pages_label: 'invalid_pages_label.grid(row=12, column=0, pady=5, padx=padx, sticky="w")'
-            },
-            "next_step_elements": {
-                docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=17, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (docx_label,),
-        "inhibitors": {
-            invalid_docx_label: "Для запуска сканирования нужно выбрать файл в формате docx",
-            invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
-    },
-    "convert_to_pdf_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
-        text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
-        pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-        is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
-            },
-            "next_step_elements": {
-                docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (docx_label,),
-        "inhibitors": {
-            invalid_docx_label: "Для конвертации нужно выбрать файл в формате docx",
-            invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
-    },
-     "grayscale_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
-        text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
-        pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-        is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
-            },
-            "next_step_elements": {
-                pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (pdf_label,),
-        "inhibitors": {
-            invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",
-            invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
-    },
-    "compress_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-            },
-            "next_step_elements": {
-                pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (pdf_label,),
-        "inhibitors": {
-            invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
-    },
-    "convert_to_png_mode": {
-        back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-        header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-        btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-        btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-        "additional_elements": {
-            "error_messages": {
-                invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-            },
-            "next_step_elements": {
-                pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
-            }
-        },
-        "work_conditions": (pdf_label,),
-        "inhibitors": {
-            invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
-    },
-
-}
-
-
-
-mode_settings = {
-    "default_mode": {
-        header_label: "Режим по умолчанию",
-        btn_file_docx: "Выберите файл для сканирования",
-        btn_file_last_page: "Выберите файл для последней части документа",
-        btn_to_work: "Сканировать",
-        conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
-    "custom_mode": {
-        header_label: "Пользовательский режим с настройками",
-        btn_file_docx: "Выберите файл для сканирования",
-        btn_file_last_page: "Выберите файл для последней части документа",
-        btn_to_work: "Сканировать",
-        conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
-    "convert_to_pdf_mode": {
-        header_label: "Конвертация docx в pdf",
-        btn_file_docx: "Выберите файл для конвертации в pdf",
-        btn_to_work: "Конвертировать",
-        conditions_message_label: "Для конвертации нужно выбрать файл в формате docx"},
-    "grayscale_mode": {
-        header_label: "Сделать pdf чёрно-белым",
-        btn_file_pdf: "Выберите pdf-файл",
-        btn_to_work: "Изменить",
-        conditions_message_label: "Для изменения нужно выбрать файл в формате pdf"},
-    "compress_mode": {
-        header_label: "Сжать pdf",
-        btn_file_pdf: "Выберите pdf-файл",
-        btn_to_work: "Сжать",
-        conditions_message_label: "Для сжатия нужно выбрать файл в формате pdf"},
-    "convert_to_png_mode": {
-        header_label: "Конвертировать pdf в png",
-        btn_file_pdf: "Выберите pdf-файл",
-        btn_to_work: "Конвертировать",
-        conditions_message_label: "Для конвертации нужно выбрать файл в формате pdf"},
-
-}
-
-user_input = {
-    "default_mode": {
-        "docx_path": 'docx_label.cget("text")',
-        "last_page_path": 'last_page_label.cget("text")',
-        "color": '0',
-        "need_sign_translator": '1',
-        "is_compression_needed": '1',
-    },
-    "custom_mode": {
-        "docx_path": 'docx_label.cget("text")',
-        "last_page_path": 'last_page_label.cget("text")',
-        "color": 'color_var.get()',
-        "need_sign_translator": '1',
-        "pages": 'pages.get()',
-        "is_compression_needed": '1',
-    },
-    "convert_to_pdf_mode": {
-        "docx_path": 'docx_label.cget("text")',
-        "pages": 'pages.get()',
-        "is_compression_needed": 'is_compression_needed.get()',
-    },
-    "grayscale_mode": {
-        "pdf_path": 'pdf_label.cget("text")',
-        "is_compression_needed": 'is_compression_needed.get()',
-    },
-    "compress_mode": {
-        "pdf_path": 'pdf_label.cget("text")',
-        "is_compression_needed": '1',
-    },
-}
 
 def update_elements(mode):
     # Скрываем все элементы из предыдущего режима
     global current_mode
-    print(mode)
     current_mode = mode
+    from pprint import pprint
     for element in win.winfo_children():
         element.grid_remove()
 
     # В зависимости от выбранного режима добавляем новые элементы
     for key, element in elements[mode].items():
         if not isinstance(key, str):
+            print("Выполняем команду", element)
             eval(element)
     try:
         for element, text in mode_settings[current_mode].items():
+            print("Меняем конфигурацию элемента", element, text)
             element.configure(text=text)
     except KeyError:
         pass
@@ -841,8 +812,6 @@ def flatten_dict(nested_dict):
 
 def auto_resize_window():
     win.update_idletasks()  # Обновляем все отложенные задачи
-    for element in flatten_dict(elements[current_mode]).keys():
-        print(element.cget('text'), element)
 
     max_width_element = max(
         [element for element in flatten_dict(elements[current_mode]).keys() if element.winfo_ismapped()],
