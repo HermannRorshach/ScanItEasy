@@ -3,8 +3,41 @@ import customtkinter as ctk
 from tkinter import filedialog
 import tkinter as tk
 import logging
+import sys
 
-class GraphicalEditor(ctk.CTk):  # Оставляем наследование от CTk, чтобы быть окном
+sys.stdout = open(os.devnull, 'w')
+sys.stderr = open('error.log', 'w')
+tk.Tk.report_callback_exception = lambda *args: None
+
+import sys
+
+# Отключение вывода всех необработанных исключений в консоль
+def handle_exception(exc_type, exc_value, exc_tb):
+    pass  # Пропускаем исключения, не выводим их
+
+sys.excepthook = handle_exception
+
+
+# Настройка логирования
+logging.basicConfig(
+    filename='app.log',
+    level=logging.DEBUG,  # Уровень логов (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Формат сообщения
+)
+
+
+def resource_path(relative_path):
+    """Возвращает путь к ресурсу, независимо от того, запущена ли программа как exe или как скрипт."""
+    try:
+        # Если программа запущена как exe, то _MEIPASS указывает на путь к распакованным ресурсам
+        base_path = sys._MEIPASS
+    except Exception:
+        # Если это обычный скрипт, используем текущую директорию
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследование от CTk, чтобы быть окном
     def __init__(self, master=None):  # Добавляем master как аргумент конструктора
         super().__init__(master)  # Передаем master в CTk
         ctk.set_appearance_mode('dark')
@@ -30,8 +63,8 @@ class GraphicalEditor(ctk.CTk):  # Оставляем наследование �
     def create_widgets(self):
 
         # Кнопка "Назад"
-        dark_image = tk.PhotoImage(file="dark.png")
-        light_image = tk.PhotoImage(file="light.png")
+        light_image = tk.PhotoImage(file=resource_path("light.png"))
+        dark_image = tk.PhotoImage(file=resource_path("dark.png"))
 
         def on_hover(event):
             back_button.config(image=dark_image)
@@ -80,13 +113,11 @@ class GraphicalEditor(ctk.CTk):  # Оставляем наследование �
         self.bind("<Button-1>", self.on_click)
 
     def on_back_button_click(self):
-        # Закрываем текущее окно (GraphicalEditor) при нажатии кнопки
+        # Скрываем текущее окно (GraphicalEditor) при нажатии кнопки "Назад"
         self.destroy()
 
-        root = ctk.CTk()  # Главное окно
-        modes_window = ModesWindow(root)  # Окно с кнопкой для объединения PDF
-
-        root.mainloop()  # Запускаем цикл событий главного окна
+        # Восстанавливаем родительское окно (ModesWindow) и делаем его активным
+        self.master.deiconify()
 
 
     def on_click(self, event):
@@ -394,8 +425,8 @@ def create_widgets():
     convert_to_png.grid(row=8, column=0, padx=70, pady=5, sticky="w")
 
     # пка Назад
-    dark_image = tk.PhotoImage(file="dark.png")
-    light_image = tk.PhotoImage(file="light.png")
+    light_image = tk.PhotoImage(file=resource_path("light.png"))
+    dark_image = tk.PhotoImage(file=resource_path("dark.png"))
 
     back_button = tk.Button(
         win,
@@ -722,12 +753,15 @@ def create_widgets():
 
 
 def on_merge_pdf_button_click(obj):
-    # Закрываем текущее окно (ModesWindow) при нажатии кнопки
-    obj.app.destroy()
+    # Скрываем текущее окно (ModesWindow)
+    obj.app.withdraw()  # Скрываем окно
 
-    # Открываем окно для объединения PDF (GraphicalEditor)
-    graphical_editor_window = GraphicalEditor()  # Создаем новое окно
-    graphical_editor_window.mainloop()  # Запускаем цикл событий нового окна
+    # Создаем и открываем новое окно для объединения PDF (GraphicalEditor)
+    graphical_editor_window = GraphicalEditor(master=obj.app)  # Передаем родительское окно
+    graphical_editor_window.mainloop()  # Запускаем цикл событий для нового окна
+
+    # Когда окно GraphicalEditor закрывается, возвращаем исходное окно
+    obj.app.deiconify()  # Возвращаем исходное окно в активное состояние
 
 
 def update_elements(mode):
@@ -817,23 +851,11 @@ def auto_resize_window():
         [element for element in flatten_dict(elements[current_mode]).keys() if element.winfo_ismapped()],
         key=lambda x: x.winfo_reqwidth()
     )
-    # print(len(flatten_dict(elements[current_mode]).keys()))
-    # print("Самый большой элемент:", max_width_element._text)
     active_widgets_width = [widget.winfo_height() for widget in win.winfo_children() if widget.winfo_ismapped()]
     total_height = sum(active_widgets_width)
 
     # Устанавливаем предварительный размер окна
     win.geometry(f"{max_width_element.winfo_reqwidth() + 2 * padx}x{total_height + 14 * len(active_widgets_width)}")
-    win.update()  # Обновляем окно после изменения геометрии
-    # print("total_height =", total_height, "win.winfo_height() =", win.winfo_height())
-
-    # Учитываем минимальную высоту окна
-    # if win.winfo_height() < total_height + 130:
-    #     window_height = total_height + 130
-    # else:
-    #     window_height = win.winfo_height()
-
-    # win.geometry(f"{max_width_element.winfo_reqwidth() + 2 * padx}x{window_height}")
     win.update()  # Обновляем окно ещё раз после изменения размера
 
 
