@@ -3,27 +3,38 @@ import customtkinter as ctk
 from tkinter import filedialog
 import tkinter as tk
 import logging
+import threading
 import sys
-
-sys.stdout = open(os.devnull, 'w')
-sys.stderr = open('error.log', 'w')
-tk.Tk.report_callback_exception = lambda *args: None
-
-import sys
+from ScanItEasy_backend import work_process, parse_and_adjust_indices
 
 # Отключение вывода всех необработанных исключений в консоль
+sys.stdout = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, 'w')
+tk.Tk.report_callback_exception = lambda *args: None
+
+# Настройка логирования
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+# Создаем обработчик для записи в файл с кодировкой 'utf-8'
+file_handler = logging.FileHandler('app.log', mode='a', encoding='utf-8')
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Добавляем обработчик в логгер
+logger.addHandler(file_handler)
+
+# Создаем обработчик для вывода в консоль
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+# Добавляем обработчик для консоли
+logger.addHandler(console_handler)
+
+# Обработка необработанных исключений
 def handle_exception(exc_type, exc_value, exc_tb):
     pass  # Пропускаем исключения, не выводим их
 
 sys.excepthook = handle_exception
-
-
-# Настройка логирования
-logging.basicConfig(
-    filename='app.log',
-    level=logging.DEBUG,  # Уровень логов (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-    format='%(asctime)s - %(levelname)s - %(message)s',  # Формат сообщения
-)
 
 
 def resource_path(relative_path):
@@ -54,11 +65,20 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
         self.configure_grid()
         self.create_widgets()
 
+        # Обработчик закрытия окна
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
     def configure_grid(self):
         self.grid_columnconfigure(0, weight=1)  # Столбец 0 растягивается
         self.grid_rowconfigure(0, weight=0)  # Верхняя строка не будет растягиваться
         self.grid_rowconfigure(1, weight=0)  # Верхняя строка не будет растягиваться
         self.grid_rowconfigure(2, weight=1)  # Нижняя строка будет растягиваться
+
+    def on_close(self):
+        # Закрываем основное окно, когда закрывается это окно
+        if self.master:
+            self.master.destroy()
+        self.destroy()  # Закрываем это окно
 
     def create_widgets(self):
 
@@ -88,9 +108,10 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
                                     font=("Arial", 17, "bold"))
         header_label.grid(row=1, column=0)
 
-        self.progress_label = ctk.CTkLabel(self, text="0%", font=("Arial", 17, "bold"),)
-        self.progress_bar = ctk.CTkProgressBar(self, width=400, height=25, corner_radius=8, border_width=0,
-                                               bg_color=self.cget('bg'), fg_color="white")
+        self.is_compression_needed = ctk.BooleanVar(value=True)
+        is_compression_needed_checkbox = ctk.CTkCheckBox(self, text="Сжать итоговый pdf", variable=self.is_compression_needed)
+        is_compression_needed_checkbox.grid(row=1001, column=0, padx=padx, pady=5, sticky="w")
+        is_compression_needed_checkbox.configure(command=lambda: print(self.is_compression_needed.get()))
 
         # Кнопка добавления блока
         add_block_button = ctk.CTkButton(
@@ -321,10 +342,31 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
         }
         if len(data) < 2:
             return
-        self.progress_label.grid(row=1000, column=0, pady=5, padx=70, sticky="w")
-        self.progress_bar.grid(row=1001, column=0, pady=5, padx=70, sticky="w")
-        print(data)
-        return data
+        user_input_data = {}
+        user_input_data["mode"] = "merge_pdf"
+
+        files = []
+        pages = []
+
+        for block in data.values():
+            files.append(block["file_path"])
+            if block["pages_entry"]:
+                pages.append(parse_and_adjust_indices(block["pages_entry"]))
+            else:
+                pages.append('')
+
+
+        user_input_data["parameters"] = (files, pages, "merged_output.pdf")
+        user_input_data["is_compression_needed"] = self.is_compression_needed.get()
+        print("self.is_compression_needed.get() =", self.is_compression_needed.get())
+
+        # print("\n\nuser_input_data =\n")
+        # print(user_input_data)
+        # Запускаем задачу в отдельном потоке
+        task_thread = threading.Thread(target=work_process, args=(user_input_data,))
+        task_thread.start()
+        # Запускаем процесс обновления прогресса в основном потоке
+        print(user_input_data)
 
 # Глобальная переменная для окна
 win = None
@@ -391,7 +433,7 @@ def create_widgets():
     global elements, mode_settings, user_input
     # Переменные
     mode_var = ctk.StringVar(value="modes")
-    color_var = ctk.IntVar(value=0)
+    color_var = ctk.StringVar(value="red")
     signature_var = ctk.IntVar(value=1)
     is_compression_needed = ctk.BooleanVar(value=True)
 
@@ -466,9 +508,9 @@ def create_widgets():
     # ьзовательский режим с настройками
     color_label = ctk.CTkLabel(win, text="Выберите цвет ленточки")
 
-    red = ctk.CTkRadioButton(win, text="Красный", variable=color_var, value=0, command=lambda: print("Цвет ленты: красный"))
+    red = ctk.CTkRadioButton(win, text="Красный", variable=color_var, value="red", command=lambda: print("Цвет ленты: красный"))
 
-    blue = ctk.CTkRadioButton(win, text="Синий", variable=color_var, value=1, command=lambda: print("Цвет ленты: Синий"))
+    blue = ctk.CTkRadioButton(win, text="Синий", variable=color_var, value="blue", command=lambda: print("Цвет ленты: Синий"))
 
     pages_label = ctk.CTkLabel(win, text="Выберите страницы")
 
@@ -498,12 +540,13 @@ def create_widgets():
     # пка для выбора файла pdf
     btn_file_pdf = ctk.CTkButton(win, text="Выберите pdf-файл", command=lambda: update_file_label(pdf_label, ["pdf"], invalid_pdf_label))
 
+    last_page_label = ctk.CTkLabel(win, text=None)
+    print("last_page_label =", last_page_label)
     btn_file_last_page = ctk.CTkButton(
         win, text="Выберите файл для последней части документа",
         command=lambda: update_file_label(
             last_page_label, ["pdf", "jpeg", "jpg", "png"],
             invalid_last_page_label))
-    last_page_label = ctk.CTkLabel(win, text=None)
 
     pdf_label = ctk.CTkLabel(win, text=None)
 
@@ -538,6 +581,8 @@ def create_widgets():
             btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
             btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
+            "start_settings": ['color_var.set("red")', 'signature_var.set(1)',
+                               'docx_label.configure(text=None)', 'last_page_label.configure(text=None)'],
             "additional_elements": {
                 "error_messages": {
                     invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
@@ -568,6 +613,9 @@ def create_widgets():
             signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
             signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "start_settings": ['color_var.set("red")', 'signature_var.set(1)',
+                               'docx_label.configure(text=None)', 'last_page_label.configure(text=None)',
+                               'pages.delete(0, "end")'],
             "additional_elements": {
                 "error_messages": {
                     invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
@@ -596,6 +644,8 @@ def create_widgets():
             pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
             is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "start_settings": ['docx_label.configure(text=None)', 'is_compression_needed.set(True)',
+                               'pages.delete(0, "end")'],
             "additional_elements": {
                 "error_messages": {
                     invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
@@ -622,6 +672,8 @@ def create_widgets():
             pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
             is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "start_settings": ['docx_label.configure(text=None)', 'is_compression_needed.set(True)',
+                               'pages.delete(0, "end")'],
             "additional_elements": {
                 "error_messages": {
                     invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
@@ -644,6 +696,7 @@ def create_widgets():
             header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
             btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            "start_settings": ['pdf_label.configure(text=None)', 'is_compression_needed.set(True)'],
             "additional_elements": {
                 "error_messages": {
                     invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
@@ -691,40 +744,45 @@ def create_widgets():
             btn_file_last_page: "Выберите файл для последней части документа",
             btn_to_work: "Сканировать",
             conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+            progress_label: "0%",
         "custom_mode": {
             header_label: "Пользовательский режим с настройками",
             btn_file_docx: "Выберите файл для сканирования",
             btn_file_last_page: "Выберите файл для последней части документа",
             btn_to_work: "Сканировать",
             conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+            progress_label: "0%",
         "convert_to_pdf_mode": {
             header_label: "Конвертация docx в pdf",
             btn_file_docx: "Выберите файл для конвертации в pdf",
             btn_to_work: "Конвертировать",
             conditions_message_label: "Для конвертации нужно выбрать файл в формате docx"},
+            progress_label: "0%",
         "grayscale_mode": {
             header_label: "Сделать pdf чёрно-белым",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Изменить",
             conditions_message_label: "Для изменения нужно выбрать файл в формате pdf"},
+            progress_label: "0%",
         "compress_mode": {
             header_label: "Сжать pdf",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Сжать",
             conditions_message_label: "Для сжатия нужно выбрать файл в формате pdf"},
+            progress_label: "0%",
         "convert_to_png_mode": {
             header_label: "Конвертировать pdf в png",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Конвертировать",
             conditions_message_label: "Для конвертации нужно выбрать файл в формате pdf"},
-
+            progress_label: "0%",
     }
 
     user_input = {
         "default_mode": {
             "docx_path": 'docx_label.cget("text")',
             "last_page_path": 'last_page_label.cget("text")',
-            "color": '0',
+            "color": 'color_var.get()',
             "need_sign_translator": '1',
             "is_compression_needed": '1',
         },
@@ -732,7 +790,7 @@ def create_widgets():
             "docx_path": 'docx_label.cget("text")',
             "last_page_path": 'last_page_label.cget("text")',
             "color": 'color_var.get()',
-            "need_sign_translator": '1',
+            "need_sign_translator": 'signature_var.get()',
             "pages": 'pages.get()',
             "is_compression_needed": '1',
         },
@@ -744,10 +802,14 @@ def create_widgets():
         "grayscale_mode": {
             "pdf_path": 'pdf_label.cget("text")',
             "is_compression_needed": 'is_compression_needed.get()',
+            "pages": 'pages.get()',
         },
         "compress_mode": {
             "pdf_path": 'pdf_label.cget("text")',
             "is_compression_needed": '1',
+        },
+        "convert_to_png_mode": {
+            "pdf_path": 'pdf_label.cget("text")',
         },
     }
 
@@ -783,7 +845,11 @@ def update_elements(mode):
             element.configure(text=text)
     except KeyError:
         pass
+    if "start_settings" in elements[current_mode]:
+        for setting in elements[current_mode]["start_settings"]:
+            eval(setting)
     auto_resize_window()
+
 
 
 def is_ready_to_start_work():
@@ -813,6 +879,22 @@ def is_ready_to_start_work():
     return True
 
 
+# Функция обновления прогресса в UI
+def update_progress(user_input_data):
+    mode = user_input_data["mode"]
+
+    # Вычисляем процент завершения
+    progress = user_input_data["progress"]
+
+    # Обновляем прогресс-бар и метку
+    progress_bar.set(progress / 100)  # Прогресс в формате от 0 до 1
+    progress_label.configure(text=f"{progress}%")  # Обновляем текст метки
+
+    # Если прогресс не достиг 100%, проверяем через 1 секунду
+    if progress < 100:
+        win.after(500, update_progress, user_input_data)  # Проверяем каждую секунду
+
+
 def work():
     if not is_ready_to_start_work():
         return
@@ -820,21 +902,29 @@ def work():
     print("Закрепляем прогресс-бар")
     eval(elements[current_mode]["additional_elements"]["next_step_elements"][progress_label])
     eval(elements[current_mode]["additional_elements"]["next_step_elements"][progress_bar])
+    progress_label.configure(text="0%")
     progress_bar.set(0)
     auto_resize_window()
     user_input_data = {"mode": current_mode}
+    print('last_page_label', last_page_label, 'last_page_label.cget("text") =', last_page_label.cget("text"))
     for key, value in user_input[current_mode].items():
+        print(key, value)
         user_input_data[key] = eval(value)
+    user_input_data["progress"] = 0
+
     print("\n\nuser_input_data =\n")
     print(user_input_data)
-
-
+    # Запускаем задачу в отдельном потоке
+    task_thread = threading.Thread(target=work_process, args=(user_input_data,))
+    task_thread.start()
+    # Запускаем процесс обновления прогресса в основном потоке
+    update_progress(user_input_data)
 
 
 def flatten_dict(nested_dict):
     flatten_dict = {}
     for key, value in nested_dict.items():
-        if not key in ("work_conditions", "inhibitors"):
+        if not key in ("work_conditions", "inhibitors", "start_settings"):
             if not isinstance(key, str):
                 flatten_dict[key] = value
             else:
@@ -863,7 +953,10 @@ def auto_resize_window():
 
 def update_file_label(label, formats, alternative_label):
     filename = filedialog.askopenfilename()
-    # print("Функция update_file_label запущена с параметрами:", label, formats, alternative_label)
+    print("Функция update_file_label запущена с параметрами:", label, formats, alternative_label)
+    if not filename:
+        label.configure(text="")
+        print("Проверяем значение лейбла в функции update_file_label", label, "текст:", label.cget("text"))
     if filename.split(".")[-1] in formats:
         alternative_label.grid_remove()
         conditions_message_label.grid_remove()
