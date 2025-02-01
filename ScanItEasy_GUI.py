@@ -12,25 +12,25 @@ from ScanItEasy_backend import parse_and_adjust_indices, work_process
 # Отключение вывода всех необработанных исключений в консоль
 sys.stdout = open(os.devnull, 'w')
 sys.stderr = open(os.devnull, 'w')
-tk.Tk.report_callback_exception = lambda *args: None
 
-# # Настройка логирования
+# Настройка логирования
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
-# Создаем обработчик для записи в файл с кодировкой 'utf-8'
-file_handler = logging.FileHandler('app.log', mode='a', encoding='utf-8')
-file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+# Проверка, если обработчики уже добавлены
+if not logger.hasHandlers():
+    logger.setLevel(logging.DEBUG)
 
-# Добавляем обработчик в логгер
-logger.addHandler(file_handler)
+    # Создаем обработчик для записи в файл с кодировкой 'utf-8'
+    file_handler = logging.FileHandler('app.log', mode='a', encoding='utf-8')
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
 
-# Создаем обработчик для вывода в консоль
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# Добавляем обработчик для консоли
-logger.addHandler(console_handler)
+    # Создаем обработчик для вывода в консоль
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(console_handler)
 
 # # Обработка необработанных исключений
 # def handle_exception(exc_type, exc_value, exc_tb):
@@ -39,10 +39,20 @@ logger.addHandler(console_handler)
 # sys.excepthook = handle_exception
 
 
-def resource_path(relative_path):
-    """Возвращает путь к ресурсу, независимо от того, запущена ли программа как exe или как скрипт."""
+def resource_path(relative_path: str) -> str:
+    """
+        Gets the absolute path to a resource, working in both dev and bundled
+        modes.
+
+        Parameters:
+        relative_path (str): The relative path to the resource.
+
+        Returns:
+        str: The absolute path to the resource.
+        """
     try:
-        # Если программа запущена как exe, то _MEIPASS указывает на путь к распакованным ресурсам
+        # Если программа запущена как exe, то _MEIPASS указывает на путь
+        # к распакованным ресурсам
         base_path = sys._MEIPASS
     except Exception:
         # Если это обычный скрипт, используем текущую директорию
@@ -50,8 +60,18 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследование от CTk, чтобы быть окном
-    def __init__(self, master=None):  # Добавляем master как аргумент конструктора
+
+# Оставляем наследование от CTk, чтобы быть окном
+class GraphicalEditor(ctk.CTkToplevel):
+    # Добавляем master как аргумент конструктора
+    def __init__(self, master: tk.Tk | None = None) -> None:
+        """
+        Initializes the graphical editor window with a dark theme, default
+        color, and specified master window.
+
+        Args:
+            master: The parent window, default is None for standalone window.
+        """
         super().__init__(master)  # Передаем master в CTk
         ctk.set_appearance_mode('dark')
         ctk.set_default_color_theme('green')
@@ -59,7 +79,8 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
         window_position_horizontal = 400
         window_position_vertical = 10
         self.geometry(
-            f'{700}x{600}+{window_position_horizontal}+{window_position_vertical}')
+            f'{700}x{600}+{window_position_horizontal}'
+            f'+{window_position_vertical}')
         self.blocks = {}  # Используем словарь для хранения блоков
         self.block_id = -1  # Начальный индекс-ключ для блока
         self.flag = True
@@ -70,20 +91,33 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
         # Обработчик закрытия окна
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    def configure_grid(self):
+    def configure_grid(self) -> None:
+        """
+        Configures the grid layout of the window with specific row and column
+        configurations.
+        """
         self.grid_columnconfigure(0, weight=1)  # Столбец 0 растягивается
-        self.grid_rowconfigure(0, weight=0)  # Верхняя строка не будет растягиваться
-        self.grid_rowconfigure(1, weight=0)  # Верхняя строка не будет растягиваться
-        self.grid_rowconfigure(2, weight=1)  # Нижняя строка будет растягиваться
+        # Верхняя строка не будет растягиваться
+        self.grid_rowconfigure(0, weight=0)
+        # Верхняя строка не будет растягиваться
+        self.grid_rowconfigure(1, weight=0)
+        # Нижняя строка будет растягиваться
+        self.grid_rowconfigure(2, weight=1)
 
-    def on_close(self):
+    def on_close(self) -> None:
+        """
+        Closes the graphical editor window and the parent window if it exists.
+        """
         # Закрываем основное окно, когда закрывается это окно
         if self.master:
             self.master.destroy()
         self.destroy()  # Закрываем это окно
 
-    def create_widgets(self):
-
+    def create_widgets(self) -> None:
+        """
+        Creates all the widgets (buttons, labels, checkboxes, etc.)
+        in the window.
+        """
         # Кнопка "Назад"
         light_image = tk.PhotoImage(file=resource_path("light.png"))
         dark_image = tk.PhotoImage(file=resource_path("dark.png"))
@@ -95,9 +129,12 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
             back_button.config(image=light_image)
 
         back_button = tk.Button(
-            self, image=light_image, text="Назад", font=("Arial", 14, "normal"),
-            fg="white", padx=10, pady=10, bg=self["bg"], activebackground=self["bg"],
-            borderwidth=0, command=self.on_back_button_click, compound="left", relief="flat"
+            self, image=light_image, text="Назад",
+            font=("Arial", 14, "normal"),
+            fg="white", padx=10, pady=10, bg=self["bg"],
+            activebackground=self["bg"],
+            borderwidth=0, command=self.on_back_button_click, compound="left",
+            relief="flat"
         )
 
         back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")
@@ -106,14 +143,20 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
         back_button.bind("<Leave>", on_leave)
 
         # Заголовок
-        header_label = ctk.CTkLabel(self, text="Объединить два или более pdf-файлов",
-                                    font=("Arial", 17, "bold"))
+        header_label = ctk.CTkLabel(
+            self, text="Объединить два или более pdf-файлов",
+            font=("Arial", 17, "bold"))
         header_label.grid(row=1, column=0)
 
         self.is_compression_needed = ctk.BooleanVar(value=True)
-        is_compression_needed_checkbox = ctk.CTkCheckBox(self, text="Сжать итоговый pdf", variable=self.is_compression_needed)
-        is_compression_needed_checkbox.grid(row=1001, column=0, padx=padx, pady=5, sticky="w")
-        is_compression_needed_checkbox.configure(command=lambda: print(self.is_compression_needed.get()))
+        is_compression_needed_checkbox = ctk.CTkCheckBox(
+            self, text="Сжать итоговый pdf",
+            variable=self.is_compression_needed)
+        is_compression_needed_checkbox.grid(
+            row=1001, column=0, padx=padx, pady=5, sticky="w")
+        is_compression_needed_checkbox.configure(
+            command=lambda: logging.debug(
+                f"Compression needed: {self.is_compression_needed.get()}"))
 
         # Кнопка добавления блока
         add_block_button = ctk.CTkButton(
@@ -130,36 +173,56 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
 
         # Фрейм для блоков
         self.blocks_frame = ctk.CTkScrollableFrame(self)
-        self.blocks_frame.grid(row=2, column=0, sticky="nsew", padx=50, pady=10)
+        self.blocks_frame.grid(
+            row=2, column=0, sticky="nsew", padx=50, pady=10)
 
         # Привязываем обработчик события клика по окну для проверки всех полей
         self.bind("<Button-1>", self.on_click)
 
-    def on_back_button_click(self):
+    def on_back_button_click(self) -> None:
+        """
+        Closes the current window and restores the parent window.
+        """
         # Скрываем текущее окно (GraphicalEditor) при нажатии кнопки "Назад"
         self.destroy()
 
         # Восстанавливаем родительское окно (ModesWindow) и делаем его активным
         self.master.deiconify()
 
+    def on_click(self, event: tk.Event) -> None:
+        """
+        Validates input fields when the user clicks anywhere in the window.
 
-    def on_click(self, event):
-        """Проверяем все поля ввода при клике в любое место окна"""
+        Args:
+            event: The click event that triggered the function.
+        """
         for index, block in self.blocks.items():
             entry_widget = block["pages_entry"]
             pages_entry_error_label = block["pages_entry_error_label"]
             self.validate_entry(entry_widget, pages_entry_error_label)
 
-    def check_block(self):
-        if self.blocks and self.blocks[self.block_id]["file_label"].cget("text") != "Файл не выбран":
+    def check_block(self) -> bool:
+        """
+        Checks if a block is properly filled with a file and its pages.
+
+        Returns:
+            bool: True if block is valid, False otherwise.
+        """
+        if (self.blocks and self.blocks[self.block_id]["file_label"].cget(
+                "text") != "Файл не выбран"):
             return True
         for block_id in self.blocks.keys():
-            if self.blocks and self.blocks[block_id]["file_label"].cget("text") == "Файл не выбран":
+            if (self.blocks and self.blocks[block_id]["file_label"].cget(
+                    "text") == "Файл не выбран"):
                 self.blocks[block_id]["file_label"].grid_remove()
-                self.blocks[block_id]["file_path_empty_error_label"].grid(row=0, column=1, sticky="w", padx=10, pady=0)
+                self.blocks[block_id]["file_path_empty_error_label"].grid(
+                    row=0, column=1, sticky="w", padx=10, pady=0)
         return False
 
-    def add_block(self):
+    def add_block(self) -> None:
+        """
+        Adds a new block for file selection and page input in the window.
+        """
         # Сначала проверяем все поля ввода
         if not self.check_all_entries_valid():
             return
@@ -171,7 +234,8 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
 
             # Создание фрейма для нового блока
             block_frame = ctk.CTkFrame(self.blocks_frame)
-            block_frame.grid(row=self.block_id, column=0, pady=5, padx=5, sticky="ew")
+            block_frame.grid(
+                row=self.block_id, column=0, pady=5, padx=5, sticky="ew")
             block_frame.grid_columnconfigure(1, weight=1)
 
             # Метка для отображения имени файла
@@ -187,42 +251,61 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
 
             # Кнопка удаления блока
             delete_button = ctk.CTkButton(
-            block_frame,
-            text="X",  # Текст кнопки
-            font=("Arial", 17, "bold"),  # Шрифт: Arial, размер 14, жирный
-            fg_color=block_frame["bg"],  # Цвет фона кнопки
-            text_color="white",  # Цвет текста
-            hover_color="red",  # Цвет при наведении
-            width=30,  # Ширина кнопки
-            height=30,  # Высота кнопки
-            command=lambda: self.delete_block(block_id)
-            )
+                block_frame,
+                text="X",  # Текст кнопки
+                font=("Arial", 17, "bold"),  # Шрифт: Arial, размер 14, жирный
+                fg_color=block_frame["bg"],  # Цвет фона кнопки
+                text_color="white",  # Цвет текста
+                hover_color="red",  # Цвет при наведении
+                width=30,  # Ширина кнопки
+                height=30,  # Высота кнопки
+                command=lambda: self.delete_block(block_id)
+                )
             delete_button.grid(row=0, column=2, padx=10, sticky="e")
 
             # Лейбл для ошибок
-            file_path_empty_error_label = ctk.CTkLabel(block_frame, text="Выберите файл", text_color="red", font=("Arial", 12))
+            file_path_empty_error_label = ctk.CTkLabel(
+                block_frame, text="Выберите файл", text_color="red",
+                font=("Arial", 12))
 
-            pages_entry = ctk.CTkEntry(block_frame,
-                                       placeholder_text="Введите номера страниц через запятую и/или диапазон через дефис",   # Текст-подсказка
-                                       fg_color="lightgray",                # Цвет фона
-                                       placeholder_text_color="Gray",
-                                       text_color="black",                  # Цвет текста
-                                       width=430,                           # Ширина поля
-                                       corner_radius=10,                    # Скругленные углы
-                                       font=("Arial", 12),                   # Шрифт текста
-                                       )
-            pages_entry.grid(row=2, column=0, sticky="w", columnspan=3, pady=5, padx=10)
+            pages_entry = ctk.CTkEntry(
+                block_frame,
+                placeholder_text=("Введите номера страниц через запятую "
+                                  "и/или диапазон через дефис"),
+                fg_color="lightgray",                # Цвет фона
+                placeholder_text_color="Gray",
+                text_color="black",                  # Цвет текста
+                width=430,                           # Ширина поля
+                corner_radius=10,                    # Скругленные углы
+                font=("Arial", 12),                   # Шрифт текста
+                )
+            pages_entry.grid(
+                row=2, column=0, sticky="w", columnspan=3, pady=5, padx=10)
 
             # Лейбл для сообщения-инструкции
-            entry_label = ctk.CTkLabel(block_frame, text="Если нужны все страницы, оставьте поле пустым", font=("Arial", 12, "italic"), text_color="#2FA572", justify='center')
-            entry_label.grid(row=3, column=0, columnspan=3, sticky="w", pady=0, padx=10)
+            entry_label = ctk.CTkLabel(
+                block_frame,
+                text="Если нужны все страницы, оставьте поле пустым",
+                font=("Arial", 12, "italic"), text_color="#2FA572",
+                justify='center')
+            entry_label.grid(
+                row=3, column=0, columnspan=3, sticky="w", pady=0, padx=10)
 
             # Лейбл для ошибок
-            pages_entry_error_label = ctk.CTkLabel(block_frame, text="", text_color="red", font=("Arial", 10))
-            pages_entry_error_label.grid(row=4, column=0, columnspan=3, sticky="w", padx=10)
+            pages_entry_error_label = ctk.CTkLabel(
+                block_frame, text="", text_color="red", font=("Arial", 10))
+            pages_entry_error_label.grid(
+                row=4, column=0, columnspan=3, sticky="w", padx=10)
 
-            pages_entry.bind("<FocusOut>", lambda event, entry=pages_entry, label=pages_entry_error_label: self.validate_entry(entry, label))
-            pages_entry.bind("<ButtonRelease-1>", lambda event, entry=pages_entry, label=pages_entry_error_label: self.validate_entry(entry, label))
+            pages_entry.bind(
+                "<FocusOut>", lambda event, entry=pages_entry,
+                label=pages_entry_error_label: self.validate_entry(
+                    entry, label))
+            pages_entry.bind(
+                "<ButtonRelease-1>", lambda event,
+                entry=pages_entry,
+                label=pages_entry_error_label: self.validate_entry(
+                    entry, label))
 
             # Изначальная подсветка поля на зелёный
             pages_entry.configure(fg_color="#DEFCD4")
@@ -238,34 +321,67 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
             }
 
             # Логирование: создаём новый блок
-            logging.info(f"Создан новый блок с block_id={self.block_id}")
+            logging.debug(f"Создан новый блок с block_id={self.block_id}")
 
         else:
             return
 
-    def validate_entry(self, entry_widget, pages_entry_error_label):
+    def validate_entry(
+            self, entry_widget: ctk.CTkEntry,
+            pages_entry_error_label: ctk.CTkLabel) -> None:
+        """
+        Validates the input in the pages entry field and shows an error message
+        if needed.
+
+        Args:
+            entry_widget: The entry widget containing the input to validate.
+            pages_entry_error_label: The label where error messages are
+            displayed.
+        """
         entered_text = entry_widget.get()
 
         # Проверка данных
         if self.validate_input_pages(entered_text):
-            entry_widget.configure(fg_color="#DEFCD4")  # Зеленый цвет при корректном вводе
+            # Зеленый цвет при корректном вводе
+            entry_widget.configure(fg_color="#DEFCD4")
             pages_entry_error_label.configure(text="")  # Очищаем ошибку
         else:
-            entry_widget.configure(fg_color="lightcoral")  # Красный цвет при ошибке
-            pages_entry_error_label.configure(text="Введите номера страниц через запятую и/или диапазон через дефис")  # Сообщение об ошибке
+            # Красный цвет при ошибке
+            entry_widget.configure(fg_color="lightcoral")
+            pages_entry_error_label.configure(
+                text=("Введите номера страниц через запятую и/или диапазон "
+                      "через дефис"))  # Сообщение об ошибке
 
-    def check_all_entries_valid(self):
+    def check_all_entries_valid(self) -> bool:
+        """
+        Checks if all blocks have valid input for pages.
+
+        Returns:
+            bool: True if all entries are valid, False otherwise.
+        """
         for index, block in self.blocks.items():
             entry_widget = block["pages_entry"]
             entered_text = entry_widget.get()
             pages_entry_error_label = block["pages_entry_error_label"]
             if not self.validate_input_pages(entered_text):
-                entry_widget.configure(fg_color="lightcoral")  # Красный цвет при ошибке
-                pages_entry_error_label.configure(text="Введите номера страниц через запятую и/или диапазон через дефис")
+                # Красный цвет при ошибке
+                entry_widget.configure(fg_color="lightcoral")
+                pages_entry_error_label.configure(
+                    text=("Введите номера страниц через запятую и/или "
+                          "диапазон через дефис"))
                 return False
         return True
 
-    def validate_input_pages(self, text):
+    def validate_input_pages(self, text: str) -> bool:
+        """
+        Validates the page input format (numbers or ranges of pages).
+
+        Args:
+            text: The string containing the page numbers or ranges.
+
+        Returns:
+            bool: True if the input is valid, False otherwise.
+        """
         if not text:
             return True
         parts = [part.strip() for part in text.split(",")]
@@ -289,7 +405,14 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
                     return False
         return True
 
-    def select_file(self, block_id):
+    def select_file(self, block_id: int) -> None:
+        """
+        Opens a file dialog to select a PDF file and updates the block with
+        the selected file.
+
+        Args:
+            block_id: The ID of the block being updated with the selected file.
+        """
         file_path = filedialog.askopenfilename(
             title="Выберите файл", filetypes=[("PDF Files", "*.pdf")])
         if file_path:
@@ -297,41 +420,58 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
 
             # Если длина имени файла больше 50 символов, обрезаем его
             if len(file_name) > 50:
-                file_name = file_name[:25] + " . . . " + file_name[-20:]  # 25 символов с начала и 20 символов с конца
+                # 25 символов с начала и 20 символов с конца
+                file_name = file_name[:25] + " . . . " + file_name[-20:]
 
             # Записываем file_path в словарь
             self.blocks[block_id]["file_path"] = file_path
 
             # Обновляем метку с именем файла
             self.blocks[block_id]["file_label"].configure(text=file_name)
-            self.blocks[block_id]["file_label"].grid(row=0, column=1, padx=10, sticky="w")
+            self.blocks[block_id]
+            ["file_label"].grid(row=0, column=1, padx=10, sticky="w")
 
             # Убираем лейбл с ошибкой
-            self.blocks[block_id]["file_path_empty_error_label"].grid_remove()
+            self.blocks[block_id]
+            ["file_path_empty_error_label"].grid_remove()
 
+    def delete_block(self, block_id: int) -> None:
+        """
+        Deletes a block with the specified block ID.
 
-    def delete_block(self, block_id):
+        Args:
+            block_id: The ID of the block to be deleted.
+        """
         if block_id in self.blocks:
             block = self.blocks.pop(block_id)
             file_label_text = block["file_label"].cget("text")
             pages_text = block["pages_entry"].get()
 
             # Логирование: удаляем блок
-            logging.info(f"Удален блок с block_id={block_id}, file_label='{file_label_text}', pages_entry='{pages_text}'")
+            logging.debug(
+                f"Удален блок с block_id={block_id}, "
+                f"file_label =' {file_label_text}', "
+                f"pages_entry='{pages_text}'")
 
             block["frame"].destroy()
 
             # Логирование: текущее состояние блоков
-            logging.info("После удаления блоков:")
+            logging.debug("После удаления блоков:")
             for b_id, b_data in self.blocks.items():
                 file_label = b_data["file_label"].cget("text")
                 pages_text = b_data["pages_entry"].get()
-                logging.info(f"  block_id={b_id}, file_label='{file_label}', pages_entry='{pages_text}'")
+                logging.debug(
+                    f"  block_id={b_id}, file_label='{file_label}', "
+                    f"pages_entry='{pages_text}'")
 
             if not self.blocks:
                 self.flag = True
 
-    def merge(self):
+    def merge(self) -> None:
+        """
+        Merges the selected PDF files with the specified page ranges and
+        compression option.
+        """
         self.check_block()
         if not self.check_all_entries_valid():
             return
@@ -357,18 +497,20 @@ class GraphicalEditor(ctk.CTkToplevel):  # Оставляем наследова
             else:
                 pages.append('')
 
-
         user_input_data["parameters"] = (files, pages, "merged_output.pdf")
-        user_input_data["is_compression_needed"] = self.is_compression_needed.get()
-        print("self.is_compression_needed.get() =", self.is_compression_needed.get())
+        user_input_data["is_compression_needed"] = (
+            self.is_compression_needed.get())
+        logging.debug(
+            f"self.is_compression_needed.get() = "
+            f"{self.is_compression_needed.get()}")
 
-        # print("\n\nuser_input_data =\n")
-        # print(user_input_data)
         # Запускаем задачу в отдельном потоке
-        task_thread = threading.Thread(target=work_process, args=(user_input_data,))
+        task_thread = threading.Thread(
+            target=work_process, args=(user_input_data,))
         task_thread.start()
         # Запускаем процесс обновления прогресса в основном потоке
-        print(user_input_data)
+        logging.debug(f"user_input_data = {user_input_data}")
+
 
 # Глобальная переменная для окна
 win = None
@@ -383,23 +525,27 @@ padx = 70
 elements = mode_settings = user_input = None
 
 # Глобальные переменные для виджетов
-mode_var = None
+mode_var = btn_file_last_page = convert_to_png = None
 mode_label = default_mode = custom_mode = additionally_label = None
-convert_to_pdf = merge_pdf = grayscale_mode = compress_mode = convert_to_png = None
-back_button = dark_image = light_image = header_label = None
-btn_file_docx = docx_label = invalid_docx_label = invalid_last_page_label = None
+convert_to_pdf = merge_pdf = grayscale_mode = compress_mode = None
+invalid_last_page_label = dark_image = light_image = header_label = None
+btn_file_docx = docx_label = invalid_docx_label = back_button = None
 progress_label = progress_bar = conditions_message_label = 3
 btn_to_work = color_var = color_label = red = blue = None
 pages_label = text_help_label = pages = invalid_pages_label = None
 signature_var = signature_label = signature_yes = signature_no = None
 is_compression_needed = is_compression_needed_checkbox = None
 btn_file_pdf = pdf_label = invalid_pdf_label = last_page_label = None
-btn_file_last_page = None
-
 
 
 class ModesWindow(ctk.CTkFrame):
-    def __init__(self, master):
+    def __init__(self, master: tk.Tk) -> None:
+        """
+        Initializes the ModesWindow, which is a frame in the main application.
+
+        Args:
+            master: The parent window (main application window).
+        """
         super().__init__(master)
         self.app = master  # Сохраняем ссылку на родительское окно
         global win, obj
@@ -412,7 +558,9 @@ class ModesWindow(ctk.CTkFrame):
         self.window_position_horizontal = 400
         self.window_position_vertical = 10
         self.master.geometry(
-            f'{self.window_width}x{self.window_height}+{self.window_position_horizontal}+{self.window_position_vertical}')
+            f'{self.window_width}x{self.window_height}'
+            f'+{self.window_position_horizontal}'
+            f'+{self.window_position_vertical}')
         self.master.minsize(300, 300)
         self.master.title("ScanItEasy")
         ctk.set_appearance_mode('dark')
@@ -422,17 +570,22 @@ class ModesWindow(ctk.CTkFrame):
         # Добавляем кнопку для объединения PDF
 
 
-def create_widgets():
-    global win
-    global mode_label, default_mode, custom_mode, additionally_label, convert_to_pdf, merge_pdf
-    global grayscale_mode, compress_mode, convert_to_png, back_button, dark_image, light_image
-    global header_label, btn_file_docx, docx_label, invalid_docx_label, invalid_last_page_label
+def create_widgets() -> None:
+    """
+    Creates all the widgets for the ModesWindow, such as labels, buttons,
+    and radio buttons, and sets up their layout.
+    """
+    global elements, mode_label, default_mode, custom_mode, additionally_label
+    global convert_to_pdf, last_page_label, dark_image, light_image, pages
+    global grayscale_mode, compress_mode, convert_to_png, back_button
+    global header_label, btn_file_docx, docx_label, invalid_docx_label
     global progress_label, progress_bar, conditions_message_label, btn_to_work
-    global color_var, color_label, red, blue, pages_label, text_help_label, pages
-    global invalid_pages_label, signature_var, signature_label, signature_yes, signature_no
-    global is_compression_needed, is_compression_needed_checkbox, btn_file_pdf, pdf_label, invalid_pdf_label
-    global mode_var, color_var, signature_var, is_compression_needed, btn_file_last_page, last_page_label
-    global elements, mode_settings, user_input
+    global color_var, color_label, red, blue, pages_label, text_help_label
+    global invalid_pages_label, signature_var, signature_label, signature_yes
+    global signature_no, pdf_label, invalid_pdf_label, user_input, merge_pdf
+    global is_compression_needed, is_compression_needed_checkbox, btn_file_pdf
+    global mode_var, color_var, signature_var, is_compression_needed
+    global win, mode_settings, invalid_last_page_label, btn_file_last_page
     # Переменные
     mode_var = ctk.StringVar(value="modes")
     color_var = ctk.StringVar(value="red")
@@ -444,28 +597,50 @@ def create_widgets():
     mode_label.grid(row=0, column=0, padx=70, pady=15, sticky="w")
 
     # имы
-    default_mode = ctk.CTkRadioButton(win, text="Режим по умолчанию", variable=mode_var, value="default_mode", command=lambda: update_elements(mode_var.get()))
+    default_mode = ctk.CTkRadioButton(
+        win, text="Режим по умолчанию", variable=mode_var,
+        value="default_mode",
+        command=lambda: update_elements(mode_var.get()))
     default_mode.grid(row=1, column=0, padx=70, pady=5, sticky="w")
 
-    custom_mode = ctk.CTkRadioButton(win, text="Пользовательский режим с настройками", variable=mode_var, value="custom_mode", command=lambda: update_elements(mode_var.get()))
+    custom_mode = ctk.CTkRadioButton(
+        win, text="Пользовательский режим с настройками",
+        variable=mode_var, value="custom_mode",
+        command=lambda: update_elements(mode_var.get()))
     custom_mode.grid(row=2, column=0, padx=70, pady=5, sticky="w")
 
-    additionally_label = ctk.CTkLabel(win, text="Дополнительно:", font=("Arial", 12, "italic"), justify='center')
+    additionally_label = ctk.CTkLabel(
+        win, text="Дополнительно:", font=("Arial", 12, "italic"),
+        justify='center')
     additionally_label.grid(row=3)
 
-    convert_to_pdf = ctk.CTkRadioButton(win, text="Конвертировать docx в pdf", variable=mode_var, value="convert_to_pdf_mode", command=lambda: update_elements(mode_var.get()))
+    convert_to_pdf = ctk.CTkRadioButton(
+        win, text="Конвертировать docx в pdf", variable=mode_var,
+        value="convert_to_pdf_mode",
+        command=lambda: update_elements(mode_var.get()))
     convert_to_pdf.grid(row=4, column=0, padx=70, pady=5, sticky="w")
 
-    merge_pdf = ctk.CTkRadioButton(win, text="Объединить два или несколько pdf", variable=mode_var, value="merge_pdf_mode", command=lambda: on_merge_pdf_button_click(obj))
+    merge_pdf = ctk.CTkRadioButton(
+        win, text="Объединить два или несколько pdf", variable=mode_var,
+        value="merge_pdf_mode",
+        command=lambda: on_merge_pdf_button_click(obj))
     merge_pdf.grid(row=5, column=0, padx=70, pady=5, sticky="w")
 
-    grayscale_mode = ctk.CTkRadioButton(win, text="Сделать pdf чёрно-белым", variable=mode_var, value="grayscale_mode", command=lambda: update_elements(mode_var.get()))
+    grayscale_mode = ctk.CTkRadioButton(
+        win, text="Сделать pdf чёрно-белым", variable=mode_var,
+        value="grayscale_mode",
+        command=lambda: update_elements(mode_var.get()))
     grayscale_mode.grid(row=6, column=0, padx=70, pady=5, sticky="w")
 
-    compress_mode = ctk.CTkRadioButton(win, text="Сжать pdf", variable=mode_var, value="compress_mode", command=lambda: update_elements(mode_var.get()))
+    compress_mode = ctk.CTkRadioButton(
+        win, text="Сжать pdf", variable=mode_var, value="compress_mode",
+        command=lambda: update_elements(mode_var.get()))
     compress_mode.grid(row=7, column=0, padx=70, pady=5, sticky="w")
 
-    convert_to_png = ctk.CTkRadioButton(win, text="Конвертировать pdf в png", variable=mode_var, value="convert_to_png_mode", command=lambda: update_elements(mode_var.get()))
+    convert_to_png = ctk.CTkRadioButton(
+        win, text="Конвертировать pdf в png", variable=mode_var,
+        value="convert_to_png_mode",
+        command=lambda: update_elements(mode_var.get()))
     convert_to_png.grid(row=8, column=0, padx=70, pady=5, sticky="w")
 
     # пка Назад
@@ -488,10 +663,12 @@ def create_widgets():
         relief="flat"
     )
 
-    def on_hover(event):
+    def on_hover(event: tk.Event) -> None:
+        "Changes the back button image to the dark version on hover."
         back_button.config(image=dark_image)
 
-    def on_leave(event):
+    def on_leave(event: tk.Event) -> None:
+        "Resets the back button image to the light version when hover ends."
         back_button.config(image=light_image)
 
     # кции для обработки кнопки назад
@@ -501,49 +678,77 @@ def create_widgets():
     # им по умолчанию
     header_label = ctk.CTkLabel(win, text="Режим по умолчанию")
 
-    btn_file_docx = ctk.CTkButton(win, text="Выберите файл для сканирования", command=lambda: update_file_label(docx_label, ["docx"], invalid_docx_label))
+    btn_file_docx = ctk.CTkButton(
+        win, text="Выберите файл для сканирования",
+        command=lambda: update_file_label(
+            docx_label, ["docx"], invalid_docx_label))
 
     docx_label = ctk.CTkLabel(win, text=None)
 
-    invalid_docx_label = ctk.CTkLabel(win, text="Файл должен быть формата docx", text_color="red", padx=20)
+    invalid_docx_label = ctk.CTkLabel(
+        win, text="Файл должен быть формата docx", text_color="red", padx=20)
 
     # ьзовательский режим с настройками
-    color_label = ctk.CTkLabel(win, text="Выберите цвет ленточки")
+    color_label = ctk.CTkLabel(
+        win, text="Выберите цвет ленточки")
 
-    red = ctk.CTkRadioButton(win, text="Красный", variable=color_var, value="red", command=lambda: print("Цвет ленты: красный"))
+    red = ctk.CTkRadioButton(
+        win, text="Красный", variable=color_var, value="red",
+        command=lambda: logging.debug("Цвет ленты: красный"))
 
-    blue = ctk.CTkRadioButton(win, text="Синий", variable=color_var, value="blue", command=lambda: print("Цвет ленты: Синий"))
+    blue = ctk.CTkRadioButton(
+        win, text="Синий", variable=color_var, value="blue",
+        command=lambda: logging.debug("Цвет ленты: Синий"))
 
     pages_label = ctk.CTkLabel(win, text="Выберите страницы")
 
-    text_help_label = ctk.CTkLabel(win, text="Если нужны все страницы, оставьте поле пустым", font=("Arial", 12, "italic"), text_color="green", justify='center')
+    text_help_label = ctk.CTkLabel(
+        win,
+        text="Если нужны все страницы, оставьте поле пустым",
+        font=("Arial", 12, "italic"), text_color="green", justify='center')
 
-    pages = ctk.CTkEntry(win,
-                     placeholder_text="Введите номера страниц через запятую и/или диапазон страниц через дефис",   # Текст-подсказка
-                     fg_color="lightgray",                # Цвет фона
-                     placeholder_text_color="Gray",
-                     text_color="black",                  # Цвет текста
-                     width=470,                           # Ширина поля
-                     corner_radius=10,                    # Скругленные углы
-                     font=("Arial", 12),                   # Шрифт текста
-                     )
+    pages = ctk.CTkEntry(
+        win,
+        placeholder_text=("Введите номера страниц через "
+                          "запятую и/или диапазон страниц "
+                          "через дефис"),
+        fg_color="lightgray",                # Цвет фона
+        placeholder_text_color="Gray",
+        text_color="black",                  # Цвет текста
+        width=470,                           # Ширина поля
+        corner_radius=10,                    # Скругленные углы
+        font=("Arial", 12),                   # Шрифт текста
+    )
 
-    invalid_pages_label = ctk.CTkLabel(win, text="Введите номера страниц через запятую и/или диапазон страниц через дефис", text_color="red", padx=20)
+    invalid_pages_label = ctk.CTkLabel(
+        win,
+        text=("Введите номера страниц через запятую и/или диапазон "
+              "страниц через дефис"),
+        text_color="red", padx=20)
 
-    # signature_label = ctk.CTkLabel(win, text="Нужна ли подпись переводчика?")
+    # signature_label = ctk.CTkLabel(
+    # win, text="Нужна ли подпись переводчика?")
 
-    # signature_yes = ctk.CTkRadioButton(win, text="Да", variable=signature_var, value=1, command=lambda: print("Подпись переводчика нужна"))
+    # signature_yes = ctk.CTkRadioButton(
+    # win, text="Да", variable=signature_var, value=1,
+    # command=lambda: logging.debug("Подпись переводчика нужна"))
 
-    # signature_no = ctk.CTkRadioButton(win, text="Нет", variable=signature_var, value=0, command=lambda: print("Подпись переводчика не нужна"))
+    # signature_no = ctk.CTkRadioButton(
+    # win, text="Нет", variable=signature_var, value=0,
+    # command=lambda: logging.debug("Подпись переводчика не нужна"))
 
-    # им конвертации из docx в pdf
-    is_compression_needed_checkbox = ctk.CTkCheckBox(win, text="Сжать итоговый pdf", variable=is_compression_needed)
+    # Режим конвертации из docx в pdf
+    is_compression_needed_checkbox = ctk.CTkCheckBox(
+        win, text="Сжать итоговый pdf", variable=is_compression_needed)
 
     # пка для выбора файла pdf
-    btn_file_pdf = ctk.CTkButton(win, text="Выберите pdf-файл", command=lambda: update_file_label(pdf_label, ["pdf"], invalid_pdf_label))
+    btn_file_pdf = ctk.CTkButton(
+        win, text="Выберите pdf-файл",
+        command=lambda: update_file_label(
+            pdf_label, ["pdf"], invalid_pdf_label))
 
     last_page_label = ctk.CTkLabel(win, text=None)
-    print("last_page_label =", last_page_label)
+    logging.debug(f"last_page_label = {last_page_label}")
     btn_file_last_page = ctk.CTkButton(
         win, text="Выберите файл для последней части документа",
         command=lambda: update_file_label(
@@ -552,13 +757,20 @@ def create_widgets():
 
     pdf_label = ctk.CTkLabel(win, text=None)
 
-    invalid_pdf_label = ctk.CTkLabel(win, text="Файл должен быть формата pdf", text_color="red", padx=20)
+    invalid_pdf_label = ctk.CTkLabel(
+        win, text="Файл должен быть формата pdf", text_color="red", padx=20)
 
-    invalid_last_page_label = ctk.CTkLabel(win, text="Файл должен быть формата pdf, jpeg, jpg или png", text_color="red", padx=20)
+    invalid_last_page_label = ctk.CTkLabel(
+        win, text="Файл должен быть формата pdf, jpeg, jpg или png",
+        text_color="red", padx=20)
 
     btn_to_work = ctk.CTkButton(win, fg_color="red",  # Основной цвет кнопки
-                                hover_color="#8B0000", text="Сканировать", command=lambda: work())
-    conditions_message_label = ctk.CTkLabel(win, text="Для запуска сканирования нужно выбрать файл в формате docx", text_color="red", padx=20)
+                                hover_color="#8B0000",
+                                text="Сканировать", command=lambda: work())
+    conditions_message_label = ctk.CTkLabel(
+        win,
+        text="Для запуска сканирования нужно выбрать файл в формате docx",
+        text_color="red", padx=20)
     progress_label = ctk.CTkLabel(win, text="0%")
     progress_bar = ctk.CTkProgressBar(win, width=300, height=25)
 
@@ -567,177 +779,417 @@ def create_widgets():
     pages.bind("<FocusOut>", on_validate)
 
     elements = {
-        "modes": {mode_label: 'mode_label.grid(row=0, column=0, padx=padx, pady=15, sticky="w")',
-                default_mode: 'default_mode.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-                custom_mode: 'custom_mode.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-                additionally_label: "additionally_label.grid(row=3)",
-                convert_to_pdf: 'convert_to_pdf.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-                merge_pdf: 'merge_pdf.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
-                grayscale_mode: 'grayscale_mode.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-                compress_mode: 'compress_mode.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
-                convert_to_png: 'convert_to_png.grid(row=8, column=0, padx=padx, pady=5, sticky="w")'
+        "modes": {
+            mode_label: ('mode_label.grid(row=0, column=0, padx=padx, '
+                         'pady=15, sticky="w")'),
+            default_mode: ('default_mode.grid(row=1, column=0, padx=padx, '
+                           'pady=5, sticky="w")'),
+            custom_mode: ('custom_mode.grid(row=2, column=0, padx=padx, '
+                          'pady=5, sticky="w")'),
+            additionally_label: 'additionally_label.grid(row=3)',
+            convert_to_pdf: ('convert_to_pdf.grid(row=4, column=0, padx=padx, '
+                             'pady=5, sticky="w")'),
+            merge_pdf: ('merge_pdf.grid(row=5, column=0, padx=padx, pady=5, '
+                        'sticky="w")'),
+            grayscale_mode: ('grayscale_mode.grid(row=6, column=0, padx=padx, '
+                             'pady=5, sticky="w")'),
+            compress_mode: ('compress_mode.grid(row=7, column=0, padx=padx, '
+                            'pady=5, sticky="w")'),
+            convert_to_png: ('convert_to_png.grid(row=8, column=0, padx=padx, '
+                             'pady=5, sticky="w")')
         },
         "default_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['color_var.set("red")', 'signature_var.set(0)',
-                               'docx_label.configure(text=None)', 'last_page_label.configure(text=None)'],
+            back_button: (
+                'back_button.grid(row=0, column=0, padx=35, '
+                'pady=5, sticky="w")'
+            ),
+            header_label: (
+                'header_label.grid(row=1, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            btn_file_docx: (
+                'btn_file_docx.grid(row=2, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            btn_file_last_page: (
+                'btn_file_last_page.grid(row=4, column=0, '
+                'padx=padx, pady=5, sticky="w")'
+            ),
+            btn_to_work: (
+                'btn_to_work.grid(row=8, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            "start_settings": [
+                'color_var.set("red")', 'signature_var.set(0)',
+                'docx_label.configure(text=None)',
+                'last_page_label.configure(text=None)'
+            ],
             "additional_elements": {
                 "error_messages": {
-                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")'
+                    invalid_docx_label: (
+                        'invalid_docx_label.grid(row=3, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    invalid_last_page_label: (
+                        'invalid_last_page_label.grid(row=5, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 },
                 "next_step_elements": {
-                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=7, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=6, column=0, pady=5, padx=padx, sticky="w")'
+                    docx_label: (
+                        'docx_label.grid(row=3, column=0, padx=padx, '
+                        'pady=5, sticky="w")'
+                    ),
+                    last_page_label: (
+                        'last_page_label.grid(row=5, column=0, '
+                        'padx=padx, pady=5, sticky="w")'
+                    ),
+                    progress_label: (
+                        'progress_label.grid(row=6, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    progress_bar: (
+                        'progress_bar.grid(row=7, column=0, pady=5, '
+                        'padx=padx, sticky="w")'
+                    ),
+                    conditions_message_label: (
+                        'conditions_message_label.grid(row=6, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 }
             },
             "work_conditions": (docx_label,)
         },
         "custom_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
-            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
-            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_last_page: 'btn_file_last_page.grid(row=8, column=0, padx=padx, pady=(20, 5), sticky="w")',
-            color_label: 'color_label.grid(row=10, column=0, padx=padx, pady=10, sticky="w")',
-            red: 'red.grid(row=11, column=0, padx=padx, pady=5, sticky="w")',
-            blue: 'blue.grid(row=12, column=0, padx=padx, pady=(5, 15), sticky="w")',
-            # signature_label: 'signature_label.grid(row=13, column=0, padx=padx, pady=5, sticky="w")',
-            # signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
-            # signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['color_var.set("red")', 'signature_var.set(0)',
-                               'docx_label.configure(text=None)', 'last_page_label.configure(text=None)',
-                               'pages.delete(0, "end")'],
+            back_button: (
+                'back_button.grid(row=0, column=0, padx=35, '
+                'pady=5, sticky="w")'
+            ),
+            header_label: (
+                'header_label.grid(row=1, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            btn_file_docx: (
+                'btn_file_docx.grid(row=2, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            pages_label: (
+                'pages_label.grid(row=4, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            text_help_label: (
+                'text_help_label.grid(row=5, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            pages: (
+                'pages.grid(row=6, column=0, padx=padx, pady=5, '
+                'sticky="w")'
+            ),
+            btn_file_last_page: (
+                'btn_file_last_page.grid(row=8, column=0, '
+                'padx=padx, pady=(20, 5), sticky="w")'
+            ),
+            color_label: (
+                'color_label.grid(row=10, column=0, padx=padx, '
+                'pady=10, sticky="w")'
+            ),
+            red: (
+                'red.grid(row=11, column=0, padx=padx, pady=5, '
+                'sticky="w")'
+            ),
+            blue: (
+                'blue.grid(row=12, column=0, padx=padx, '
+                'pady=(5, 15), sticky="w")'
+            ),
+            btn_to_work: (
+                'btn_to_work.grid(row=18, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            "start_settings": [
+                'color_var.set("red")', 'signature_var.set(0)',
+                'docx_label.configure(text=None)',
+                'last_page_label.configure(text=None)',
+                'pages.delete(0, "end")'
+            ],
             "additional_elements": {
                 "error_messages": {
-                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_last_page_label: 'invalid_last_page_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
+                    invalid_docx_label: (
+                        'invalid_docx_label.grid(row=3, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    invalid_last_page_label: (
+                        'invalid_last_page_label.grid(row=9, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    invalid_pages_label: (
+                        'invalid_pages_label.grid(row=7, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 },
                 "next_step_elements": {
-                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    last_page_label: 'last_page_label.grid(row=9, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=17, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                    docx_label: (
+                        'docx_label.grid(row=3, column=0, padx=padx, '
+                        'pady=5, sticky="w")'
+                    ),
+                    last_page_label: (
+                        'last_page_label.grid(row=9, column=0, '
+                        'padx=padx, pady=5, sticky="w")'
+                    ),
+                    progress_label: (
+                        'progress_label.grid(row=16, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    progress_bar: (
+                        'progress_bar.grid(row=17, column=0, pady=5, '
+                        'padx=padx, sticky="w")'
+                    ),
+                    conditions_message_label: (
+                        'conditions_message_label.grid(row=16, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 }
             },
             "work_conditions": (docx_label,),
             "inhibitors": {
-                invalid_docx_label: "Для запуска сканирования нужно выбрать файл в формате docx",
-                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+                invalid_docx_label: (
+                    'Для запуска сканирования нужно выбрать файл в '
+                    'формате docx'
+                ),
+                invalid_pages_label: (
+                    'Введите номера страниц через запятую и/или '
+                    'диапазон страниц через дефис'
+                )
+            }
         },
         "convert_to_pdf_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
-            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
-            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-            is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['docx_label.configure(text=None)', 'is_compression_needed.set(True)',
-                               'pages.delete(0, "end")'],
+            back_button: (
+                'back_button.grid(row=0, column=0, padx=35, '
+                'pady=5, sticky="w")'
+            ),
+            header_label: (
+                'header_label.grid(row=1, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            btn_file_docx: (
+                'btn_file_docx.grid(row=2, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            pages_label: (
+                'pages_label.grid(row=4, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            text_help_label: (
+                'text_help_label.grid(row=5, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            pages: (
+                'pages.grid(row=6, column=0, padx=padx, pady=5, '
+                'sticky="w")'
+            ),
+            is_compression_needed_checkbox: (
+                'is_compression_needed_checkbox.grid(row=8, column=0, '
+                'padx=padx, pady=5, sticky="w")'
+            ),
+            btn_to_work: (
+                'btn_to_work.grid(row=18, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            "start_settings": [
+                'docx_label.configure(text=None)',
+                'is_compression_needed.set(True)',
+                'pages.delete(0, "end")'
+            ],
             "additional_elements": {
                 "error_messages": {
-                    invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
+                    invalid_docx_label: (
+                        'invalid_docx_label.grid(row=3, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    invalid_pages_label: (
+                        'invalid_pages_label.grid(row=7, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 },
                 "next_step_elements": {
-                    docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                    docx_label: (
+                        'docx_label.grid(row=3, column=0, padx=padx, '
+                        'pady=5, sticky="w")'
+                    ),
+                    progress_label: (
+                        'progress_label.grid(row=9, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    progress_bar: (
+                        'progress_bar.grid(row=10, column=0, pady=5, '
+                        'padx=padx, sticky="w")'
+                    ),
+                    conditions_message_label: (
+                        'conditions_message_label.grid(row=16, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 }
             },
             "work_conditions": (docx_label,),
             "inhibitors": {
-                invalid_docx_label: "Для конвертации нужно выбрать файл в формате docx",
-                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+                invalid_docx_label: (
+                    'Для конвертации нужно выбрать файл в формате docx'
+                ),
+                invalid_pages_label: (
+                    'Введите номера страниц через запятую и/или '
+                    'диапазон страниц через дефис'
+                )
+            }
         },
         "grayscale_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
-            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
-            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
-            is_compression_needed_checkbox: 'is_compression_needed_checkbox.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['docx_label.configure(text=None)', 'is_compression_needed.set(True)',
-                               'pages.delete(0, "end")'],
+            back_button: (
+                'back_button.grid(row=0, column=0, padx=35, '
+                'pady=5, sticky="w")'
+            ),
+            header_label: (
+                'header_label.grid(row=1, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            btn_file_pdf: (
+                'btn_file_pdf.grid(row=2, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            pages_label: (
+                'pages_label.grid(row=4, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            text_help_label: (
+                'text_help_label.grid(row=5, column=0, padx=padx, '
+                'pady=0, sticky="w")'
+            ),
+            pages: (
+                'pages.grid(row=6, column=0, padx=padx, pady=5, '
+                'sticky="w")'
+            ),
+            is_compression_needed_checkbox: (
+                'is_compression_needed_checkbox.grid(row=8, column=0, '
+                'padx=padx, pady=5, sticky="w")'
+            ),
+            btn_to_work: (
+                'btn_to_work.grid(row=18, column=0, padx=padx, '
+                'pady=5, sticky="w")'
+            ),
+            "start_settings": [
+                'docx_label.configure(text=None)',
+                'is_compression_needed.set(True)',
+                'pages.delete(0, "end")'
+            ],
             "additional_elements": {
                 "error_messages": {
-                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
+                    invalid_pdf_label: (
+                        'invalid_pdf_label.grid(row=3, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    invalid_pages_label: (
+                        'invalid_pages_label.grid(row=7, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 },
                 "next_step_elements": {
-                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                    pdf_label: (
+                        'pdf_label.grid(row=3, column=0, padx=padx, '
+                        'pady=5, sticky="w")'
+                    ),
+                    progress_label: (
+                        'progress_label.grid(row=9, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    ),
+                    progress_bar: (
+                        'progress_bar.grid(row=10, column=0, pady=5, '
+                        'padx=padx, sticky="w")'
+                    ),
+                    conditions_message_label: (
+                        'conditions_message_label.grid(row=16, column=0, '
+                        'pady=5, padx=padx, sticky="w")'
+                    )
                 }
             },
             "work_conditions": (pdf_label,),
             "inhibitors": {
-                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",
-                invalid_pages_label: "Введите номера страниц через запятую и/или диапазон страниц через дефис"}
+                invalid_pdf_label: (
+                    'Для конвертации нужно выбрать файл в формате pdf'
+                ),
+                invalid_pages_label: (
+                    'Введите номера страниц через запятую и/или '
+                    'диапазон страниц через дефис'
+                )
+            }
         },
         "compress_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['pdf_label.configure(text=None)', 'is_compression_needed.set(True)'],
+            back_button: ('back_button.grid(row=0, column=0, padx=35, '
+                          'pady=5, sticky="w")'),
+            header_label: ('header_label.grid(row=1, column=0, padx=padx, '
+                           'pady=5, sticky="w")'),
+            btn_file_pdf: ('btn_file_pdf.grid(row=2, column=0, padx=padx, '
+                           'pady=5, sticky="w")'),
+            btn_to_work: ('btn_to_work.grid(row=18, column=0, padx=padx, '
+                          'pady=5, sticky="w")'),
+            "start_settings": ['pdf_label.configure(text=None)',
+                               'is_compression_needed.set(True)'],
             "additional_elements": {
                 "error_messages": {
-                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pdf_label: (
+                        'invalid_pdf_label.grid(row=3, column=0, '
+                        'pady=5, padx=padx, sticky="w")')
                 },
                 "next_step_elements": {
-                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                    pdf_label: ('pdf_label.grid(row=3, column=0, padx=padx, '
+                                'pady=5, sticky="w")'),
+                    progress_label: ('progress_label.grid(row=9, column=0, '
+                                     'pady=5, padx=padx, sticky="w")'),
+                    progress_bar: (
+                        'progress_bar.grid(row=10, column=0, pady=5, '
+                        'padx=padx, sticky="w")'),
+                    conditions_message_label: (
+                        'conditions_message_label.grid(row=16, '
+                        'column=0, pady=5, padx=padx, '
+                        'sticky="w")')
                 }
             },
             "work_conditions": (pdf_label,),
             "inhibitors": {
-                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
+                invalid_pdf_label: ('Для конвертации нужно выбрать файл в '
+                                    'формате pdf')
+            }
         },
         "convert_to_png_mode": {
-            back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
-            header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_pdf: 'btn_file_pdf.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
+            back_button: ('back_button.grid(row=0, column=0, padx=35, '
+                          'pady=5, sticky="w")'),
+            header_label: ('header_label.grid(row=1, column=0, padx=padx, '
+                           'pady=5, sticky="w")'),
+            btn_file_pdf: ('btn_file_pdf.grid(row=2, column=0, padx=padx, '
+                           'pady=5, sticky="w")'),
+            btn_to_work: ('btn_to_work.grid(row=18, column=0, padx=padx, '
+                          'pady=5, sticky="w")'),
             "additional_elements": {
                 "error_messages": {
-                    invalid_pdf_label: 'invalid_pdf_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pdf_label: ('invalid_pdf_label.grid(row=3, '
+                                        'column=0, pady=5, padx=padx, '
+                                        'sticky="w")'),
                 },
                 "next_step_elements": {
-                    pdf_label: 'pdf_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    progress_label: 'progress_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
-                    progress_bar: 'progress_bar.grid(row=10, column=0, pady=5, padx=padx, sticky="w")',
-                    conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
+                    pdf_label: ('pdf_label.grid(row=3, column=0, padx=padx, '
+                                'pady=5, sticky="w")'),
+                    progress_label: ('progress_label.grid(row=9, column=0, '
+                                     'pady=5, padx=padx, sticky="w")'),
+                    progress_bar: ('progress_bar.grid(row=10, column=0, '
+                                   'pady=5, padx=padx, sticky="w")'),
+                    conditions_message_label: (
+                        'conditions_message_label.'
+                        'grid(row=16, column=0, pady=5, padx=padx, '
+                        'sticky="w")')
                 }
             },
             "work_conditions": (pdf_label,),
             "inhibitors": {
-                invalid_pdf_label: "Для конвертации нужно выбрать файл в формате pdf",}
+                invalid_pdf_label: ("Для конвертации нужно выбрать файл в "
+                                    "формате pdf")}
         },
-
     }
-
-
 
     mode_settings = {
         "default_mode": {
@@ -745,39 +1197,51 @@ def create_widgets():
             btn_file_docx: "Выберите файл для сканирования",
             btn_file_last_page: "Выберите файл для последней части документа",
             btn_to_work: "Сканировать",
-            conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+            conditions_message_label: ("Для изменения нужно выбрать файл "
+                                       "в формате docx"),
             progress_label: "0%",
+        },
         "custom_mode": {
             header_label: "Пользовательский режим с настройками",
             btn_file_docx: "Выберите файл для сканирования",
             btn_file_last_page: "Выберите файл для последней части документа",
             btn_to_work: "Сканировать",
-            conditions_message_label: "Для запуска сканирования нужно выбрать файл в формате docx"},
+            conditions_message_label: ("Для изменения нужно выбрать файл "
+                                       "в формате docx"),
             progress_label: "0%",
+        },
         "convert_to_pdf_mode": {
             header_label: "Конвертация docx в pdf",
             btn_file_docx: "Выберите файл для конвертации в pdf",
             btn_to_work: "Конвертировать",
-            conditions_message_label: "Для конвертации нужно выбрать файл в формате docx"},
+            conditions_message_label: ("Для изменения нужно выбрать файл "
+                                       "в формате docx"),
             progress_label: "0%",
+        },
         "grayscale_mode": {
             header_label: "Сделать pdf чёрно-белым",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Изменить",
-            conditions_message_label: "Для изменения нужно выбрать файл в формате pdf"},
+            conditions_message_label: ("Для изменения нужно выбрать файл "
+                                       "в формате pdf"),
             progress_label: "0%",
+        },
         "compress_mode": {
             header_label: "Сжать pdf",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Сжать",
-            conditions_message_label: "Для сжатия нужно выбрать файл в формате pdf"},
+            conditions_message_label: ("Для сжатия нужно выбрать файл в "
+                                       "формате pdf"),
             progress_label: "0%",
+        },
         "convert_to_png_mode": {
             header_label: "Конвертировать pdf в png",
             btn_file_pdf: "Выберите pdf-файл",
             btn_to_work: "Конвертировать",
-            conditions_message_label: "Для конвертации нужно выбрать файл в формате pdf"},
+            conditions_message_label: ("Для конвертации нужно выбрать файл "
+                                       "в формате pdf"),
             progress_label: "0%",
+        }
     }
 
     user_input = {
@@ -817,34 +1281,47 @@ def create_widgets():
     }
 
 
-def on_merge_pdf_button_click(obj):
+def on_merge_pdf_button_click(obj: ModesWindow) -> None:
+    """
+    Handles the click of the merge PDF button. Hides current window and
+    opens a new window for PDF merging.
+
+    :param obj: Instance of the current window containing a reference
+                to the parent window.
+    """
     # Скрываем текущее окно (ModesWindow)
     obj.app.withdraw()  # Скрываем окно
-
     # Создаем и открываем новое окно для объединения PDF (GraphicalEditor)
-    graphical_editor_window = GraphicalEditor(master=obj.app)  # Передаем родительское окно
-    graphical_editor_window.mainloop()  # Запускаем цикл событий для нового окна
+    # Передаем родительское окно
+    graphical_editor_window = GraphicalEditor(master=obj.app)
+    # Запускаем цикл событий для нового окна
+    graphical_editor_window.mainloop()
 
     # Когда окно GraphicalEditor закрывается, возвращаем исходное окно
     obj.app.deiconify()  # Возвращаем исходное окно в активное состояние
 
 
-def update_elements(mode):
+def update_elements(mode: str) -> None:
+    """
+    Updates UI elements based on the selected mode. Hides old elements and
+    adds new ones.
+
+    :param mode: The mode to display the associated elements.
+    """
     # Скрываем все элементы из предыдущего режима
     global current_mode
     current_mode = mode
-    from pprint import pprint
     for element in win.winfo_children():
         element.grid_remove()
 
     # В зависимости от выбранного режима добавляем новые элементы
     for key, element in elements[mode].items():
         if not isinstance(key, str):
-            print("Выполняем команду", element)
+            logging.debug(f"Выполняем команду: {element}")
             eval(element)
     try:
         for element, text in mode_settings[current_mode].items():
-            print("Меняем конфигурацию элемента", element, text)
+            logging.debug(f"Меняем конфигурацию элемента: {element}, {text}")
             element.configure(text=text)
     except KeyError:
         pass
@@ -854,37 +1331,54 @@ def update_elements(mode):
     auto_resize_window()
 
 
+def is_ready_to_start_work() -> bool:
+    """
+    Checks if all conditions are met to start the work. Returns True if
+    all conditions are satisfied, otherwise False.
 
-def is_ready_to_start_work():
-    print("Функция is_ready_to_start_work")
-    # Если не все элементы из work_conditions активны и имеют текст, то появляется
-    # лейбл с сообщением о необходимых условиях.
-    if not all(map(lambda x: (x.winfo_ismapped() and x.cget("text")), elements[current_mode]["work_conditions"])):
-        eval(elements[current_mode]["additional_elements"]["next_step_elements"][conditions_message_label])
-        conditions_message_label.configure(text=mode_settings[current_mode][conditions_message_label])
+    :return: True if all conditions are met, otherwise False.
+    """
+    logging.debug("Функция is_ready_to_start_work")
+    # Если не все элементы из work_conditions активны и имеют текст,
+    # то появляется лейбл с сообщением о необходимых условиях.
+    if not all(
+        map(lambda x: (x.winfo_ismapped() and x.cget("text")),
+            elements[current_mode]["work_conditions"])):
+        eval(
+            elements[current_mode]["additional_elements"]
+            ["next_step_elements"][conditions_message_label])
+        conditions_message_label.configure(
+            text=mode_settings[current_mode][conditions_message_label])
         auto_resize_window()
-        print("Есть лейбл о том, что не хватает файла docx")
+        logging.debug("Есть лейбл о том, что не хватает файла docx")
         return False
     entered_text = pages.get()
     on_validate(entered_text)
     if invalid_pages_label.winfo_ismapped():
-        eval(elements[current_mode]["additional_elements"]["next_step_elements"][conditions_message_label])
+        eval(
+            elements[current_mode]
+            ["additional_elements"]["next_step_elements"]
+            [conditions_message_label])
         message = elements[current_mode]["inhibitors"][invalid_pages_label]
         conditions_message_label.configure(text=message)
         auto_resize_window()
-        print('Лейбл о том, что нужно ввести правильно числа')
+        logging.debug('Лейбл о том, что нужно ввести правильно числа')
         return False
 
     conditions_message_label.grid_remove()
     # eval(elements[current_mode]["additional_elements"]["next_step_elements"][conditions_message_label])
     auto_resize_window()
-    print('Функция is_ready_to_start_work вернула True')
+    logging.debug('Функция is_ready_to_start_work вернула True')
     return True
 
 
 # Функция обновления прогресса в UI
-def update_progress(user_input_data):
-    mode = user_input_data["mode"]
+def update_progress(user_input_data: dict) -> None:
+    """
+    Updates the progress bar and label based on the given user input data.
+
+    :param user_input_data: A dictionary containing progress information.
+    """
 
     # Вычисляем процент завершения
     progress = user_input_data["progress"]
@@ -895,71 +1389,110 @@ def update_progress(user_input_data):
 
     # Если прогресс не достиг 100%, проверяем через 1 секунду
     if progress < 100:
-        win.after(500, update_progress, user_input_data)  # Проверяем каждую секунду
+        # Проверяем каждые полсекунды
+        win.after(500, update_progress, user_input_data)
 
 
-def work():
+def work() -> None:
+    """
+    Initiates the work process by verifying conditions and starting a
+    separate thread for processing.
+
+    :return: None
+    """
     if not is_ready_to_start_work():
         return
     conditions_message_label.grid_remove()
-    print("Закрепляем прогресс-бар")
-    eval(elements[current_mode]["additional_elements"]["next_step_elements"][progress_label])
-    eval(elements[current_mode]["additional_elements"]["next_step_elements"][progress_bar])
+    additional_elements = elements[current_mode]["additional_elements"]
+    eval(additional_elements["next_step_elements"][progress_label])
+    eval(additional_elements["next_step_elements"][progress_bar])
     progress_label.configure(text="0%")
     progress_bar.set(0)
     auto_resize_window()
     user_input_data = {"mode": current_mode}
-    print('last_page_label', last_page_label, 'last_page_label.cget("text") =', last_page_label.cget("text"))
+    logging.debug(f"last_page_label: {last_page_label}, "
+                 f"last_page_label.cget('text') = "
+                 f"{last_page_label.cget('text')}")
     for key, value in user_input[current_mode].items():
-        print(key, value)
+        logging.debug(f'key = {key}, value = {value}')
         user_input_data[key] = eval(value)
     user_input_data["progress"] = 0
 
-    print("\n\nuser_input_data =\n")
-    print(user_input_data)
+    logging.debug(f"user_input_data = {user_input_data}")
     # Запускаем задачу в отдельном потоке
-    task_thread = threading.Thread(target=work_process, args=(user_input_data,))
+    task_thread = threading.Thread(
+        target=work_process, args=(user_input_data,))
     task_thread.start()
     # Запускаем процесс обновления прогресса в основном потоке
     update_progress(user_input_data)
 
 
-def flatten_dict(nested_dict):
+def flatten_dict(nested_dict: dict) -> dict:
+    """
+    Flattens a nested dictionary, excluding specific keys such as
+    "work_conditions", "inhibitors", and "start_settings".
+
+    :param nested_dict: A dictionary to flatten.
+    :return: A flattened dictionary.
+    """
     flatten_dict = {}
     for key, value in nested_dict.items():
-        if not key in ("work_conditions", "inhibitors", "start_settings"):
+        if key not in ("work_conditions", "inhibitors", "start_settings"):
             if not isinstance(key, str):
                 flatten_dict[key] = value
             else:
                 for value_2_depth in value.values():
                     flatten_dict.update(value_2_depth)
-    # [print(element) for element in flatten_dict.keys()]
+    # logging.debug(
+    # f'element = {element}' for element in flatten_dict.keys())
+
     return flatten_dict
 
 
-def auto_resize_window():
+def auto_resize_window() -> None:
+    """
+    Automatically resizes the window based on the current visible elements
+    and their sizes.
+    """
     win.update_idletasks()  # Обновляем все отложенные задачи
 
     max_width_element = max(
-        [element for element in flatten_dict(elements[current_mode]).keys() if element.winfo_ismapped()],
+        [element for element in flatten_dict(
+            elements[current_mode]).keys() if element.winfo_ismapped()],
         key=lambda x: x.winfo_reqwidth()
     )
-    active_widgets_width = [widget.winfo_height() for widget in win.winfo_children() if widget.winfo_ismapped()]
+    active_widgets_width = [widget.winfo_height(
+        ) for widget in win.winfo_children() if widget.winfo_ismapped()]
     total_height = sum(active_widgets_width)
 
     # Устанавливаем предварительный размер окна
-    win.geometry(f"{max_width_element.winfo_reqwidth() + 2 * padx}x{total_height + 14 * len(active_widgets_width)}")
+    win.geometry(
+        f"{(max_width_element.winfo_reqwidth()
+           + 2 * padx)}x{total_height + 14 * len(active_widgets_width)}")
     win.update()  # Обновляем окно ещё раз после изменения размера
 
 
+def update_file_label(label: ctk.CTkLabel, formats: list,
+                      alternative_label: ctk.CTkLabel) -> None:
+    """
+    Updates the label to show the selected file name, if the file's format
+    matches the allowed formats.
 
-
-def update_file_label(label, formats, alternative_label):
+    :param label: The label to update with the selected file name.
+    :param formats: List of allowed file formats.
+    :param alternative_label: An alternative label to display if no file is
+                              selected or the file format is invalid.
+    """
     filename = filedialog.askopenfilename()
-    print("Функция update_file_label запущена с параметрами:", label, formats, alternative_label)
+    logging.debug(
+        f"Функция update_file_label начата с параметрами: {label}, "
+        f"{formats}, {alternative_label}")
     if not filename:
         label.configure(text="")
-        print("Проверяем значение лейбла в функции update_file_label", label, "текст:", label.cget("text"))
+        logging.debug(
+            f"Проверка значения метки в функции update_file_label: {label}, "
+            f"текст: {label.cget('text')}")
+
     if filename.split(".")[-1] in formats:
         alternative_label.grid_remove()
         conditions_message_label.grid_remove()
@@ -975,10 +1508,13 @@ def update_file_label(label, formats, alternative_label):
     auto_resize_window()
 
 
-import re
+def on_validate(param: str) -> None:
+    """
+    Validates the user input. Changes field color and shows error labels
+    if the input is incorrect.
 
-
-def on_validate(param):
+    :param param: The input text or event object to validate.
+    """
     # Если передан объект события, получаем текст из поля
     if isinstance(param, tk.Event):
         entered_text = pages.get()  # Получаем введенный текст
@@ -987,19 +1523,27 @@ def on_validate(param):
 
     # Валидация текста
     if validate_input_pages(entered_text):
-        print("Введенные данные корректны")
-        pages.configure(fg_color="lightgreen")  # Зеленый цвет при корректном вводе
+        logging.debug("Введенные данные корректны")
+        # Зеленый цвет при корректном вводе
+        pages.configure(fg_color="lightgreen")
         invalid_pages_label.grid_remove()  # Убираем лейбл об ошибке
     else:
-        print("Введенные данные некорректны")
+        logging.debug("Введенные данные некорректны")
         pages.configure(fg_color="lightcoral")  # Красный цвет при ошибке
-        eval(flatten_dict(elements[current_mode])[invalid_pages_label])  # Показать лейбл об ошибке
+        # Показать лейбл об ошибке
+        eval(flatten_dict(elements[current_mode])[invalid_pages_label])
 
     auto_resize_window()
 
 
-# Функция-валидатор
-def validate_input_pages(text):
+def validate_input_pages(text: str) -> bool:
+    """
+    Validates the input for page numbers or ranges. Returns True if valid,
+    otherwise False.
+
+    :param text: The input text containing page numbers or ranges.
+    :return: True if input is valid, otherwise False.
+    """
     # Разбиваем строку по запятым и удаляем лишние пробелы
     if not text:
         return True
@@ -1028,12 +1572,16 @@ def validate_input_pages(text):
     return True  # Если все проверки прошли
 
 
-
 # Функция, которая будет проверять, был ли клик по полю ввода
-def on_click(event):
+def on_click(event: tk.Event) -> None:
+    """
+    Handles click events on the UI. Validates the input if clicked outside
+    the pages field.
+
+    :param event: The click event to handle.
+    """
     if event.widget != pages:  # Проверяем, что клик был не по полю ввода
         on_validate(event)
-
 
 
 if __name__ == "__main__":

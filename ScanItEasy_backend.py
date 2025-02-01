@@ -6,28 +6,27 @@ import pymupdf
 from docx2pdf import convert
 
 # Отключение вывода всех необработанных исключений в консоль
-# sys.stdout = open(os.devnull, 'w')
-# sys.stderr = open(os.devnull, 'w')
+sys.stdout = open(os.devnull, 'w')
+sys.stderr = open(os.devnull, 'w')
 
 # Настройка логирования
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
 
-# Создаем обработчик для записи в файл с кодировкой 'utf-8'
-file_handler = logging.FileHandler('app.log', mode='a', encoding='utf-8')
-file_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+# Проверка, если обработчики уже добавлены
+if not logger.hasHandlers():
+    logger.setLevel(logging.DEBUG)
 
-# Добавляем обработчик в логгер
-logger.addHandler(file_handler)
+    # Создаем обработчик для записи в файл с кодировкой 'utf-8'
+    file_handler = logging.FileHandler('app.log', mode='a', encoding='utf-8')
+    file_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(file_handler)
 
-# Создаем обработчик для вывода в консоль
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(
-    logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-
-# Добавляем обработчик для консоли
-logger.addHandler(console_handler)
+    # Создаем обработчик для вывода в консоль
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(
+        logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(console_handler)
 
 # # Обработка необработанных исключений
 # def handle_exception(exc_type, exc_value, exc_tb):
@@ -683,4 +682,4 @@ def work_process(settings: dict) -> None:
         if os.path.exists('app.log'):
             logging.shutdown()
             logging.disable(logging.CRITICAL)
-            # os.remove('app.log')
+            os.remove('app.log')

@@ -5,7 +5,7 @@ a = Analysis(
     ['ScanItEasy_GUI.py'],
     pathex=[],
     binaries=[],
-    datas=[('light.png', '.'), ('dark.png', '.'), ('doc_decorations/Красная лента. Первая страница.png', 'doc_decorations'), ('doc_decorations/Синяя лента. Первая страница.png', 'doc_decorations'), ('doc_decorations/Уголок с красной лентой.png', 'doc_decorations'), ('doc_decorations/Уголок с синей лентой.png', 'doc_decorations'), ('doc_decorations/Подпись переводчика.png', 'doc_decorations')],
+    datas=[('light.png', '.'), ('dark.png', '.'), ('doc_decorations/Красная лента. Первая страница.png', 'doc_decorations'), ('doc_decorations/Синяя лента. Первая страница.png', 'doc_decorations'), ('doc_decorations/Уголок с красной лентой.png', 'doc_decorations'), ('doc_decorations/Уголок с синей лентой.png', 'doc_decorations')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
