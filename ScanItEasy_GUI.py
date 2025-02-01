@@ -1,18 +1,20 @@
-import os
-import customtkinter as ctk
-from tkinter import filedialog
-import tkinter as tk
 import logging
-import threading
+import os
 import sys
-from ScanItEasy_backend import work_process, parse_and_adjust_indices
+import threading
+import tkinter as tk
+from tkinter import filedialog
+
+import customtkinter as ctk
+
+from ScanItEasy_backend import parse_and_adjust_indices, work_process
 
 # Отключение вывода всех необработанных исключений в консоль
 sys.stdout = open(os.devnull, 'w')
 sys.stderr = open(os.devnull, 'w')
 tk.Tk.report_callback_exception = lambda *args: None
 
-# Настройка логирования
+# # Настройка логирования
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
@@ -30,11 +32,11 @@ console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(
 # Добавляем обработчик для консоли
 logger.addHandler(console_handler)
 
-# Обработка необработанных исключений
-def handle_exception(exc_type, exc_value, exc_tb):
-    pass  # Пропускаем исключения, не выводим их
+# # Обработка необработанных исключений
+# def handle_exception(exc_type, exc_value, exc_tb):
+#     pass  # Пропускаем исключения, не выводим их
 
-sys.excepthook = handle_exception
+# sys.excepthook = handle_exception
 
 
 def resource_path(relative_path):
@@ -434,7 +436,7 @@ def create_widgets():
     # Переменные
     mode_var = ctk.StringVar(value="modes")
     color_var = ctk.StringVar(value="red")
-    signature_var = ctk.IntVar(value=1)
+    signature_var = ctk.IntVar(value=0)
     is_compression_needed = ctk.BooleanVar(value=True)
 
     # Визуальные элементы
@@ -528,11 +530,11 @@ def create_widgets():
 
     invalid_pages_label = ctk.CTkLabel(win, text="Введите номера страниц через запятую и/или диапазон страниц через дефис", text_color="red", padx=20)
 
-    signature_label = ctk.CTkLabel(win, text="Нужна ли подпись переводчика?")
+    # signature_label = ctk.CTkLabel(win, text="Нужна ли подпись переводчика?")
 
-    signature_yes = ctk.CTkRadioButton(win, text="Да", variable=signature_var, value=1, command=lambda: print("Подпись переводчика нужна"))
+    # signature_yes = ctk.CTkRadioButton(win, text="Да", variable=signature_var, value=1, command=lambda: print("Подпись переводчика нужна"))
 
-    signature_no = ctk.CTkRadioButton(win, text="Нет", variable=signature_var, value=0, command=lambda: print("Подпись переводчика не нужна"))
+    # signature_no = ctk.CTkRadioButton(win, text="Нет", variable=signature_var, value=0, command=lambda: print("Подпись переводчика не нужна"))
 
     # им конвертации из docx в pdf
     is_compression_needed_checkbox = ctk.CTkCheckBox(win, text="Сжать итоговый pdf", variable=is_compression_needed)
@@ -581,7 +583,7 @@ def create_widgets():
             btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
             btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=8, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['color_var.set("red")', 'signature_var.set(1)',
+            "start_settings": ['color_var.set("red")', 'signature_var.set(0)',
                                'docx_label.configure(text=None)', 'last_page_label.configure(text=None)'],
             "additional_elements": {
                 "error_messages": {
@@ -602,29 +604,29 @@ def create_widgets():
             back_button: 'back_button.grid(row=0, column=0, padx=35, pady=5, sticky="w")',
             header_label: 'header_label.grid(row=1, column=0, padx=padx, pady=5, sticky="w")',
             btn_file_docx: 'btn_file_docx.grid(row=2, column=0, padx=padx, pady=5, sticky="w")',
-            btn_file_last_page: 'btn_file_last_page.grid(row=4, column=0, padx=padx, pady=5, sticky="w")',
-            color_label: 'color_label.grid(row=6, column=0, padx=padx, pady=10, sticky="w")',
-            red: 'red.grid(row=7, column=0, padx=padx, pady=5, sticky="w")',
-            blue: 'blue.grid(row=8, column=0, padx=padx, pady=(5, 15), sticky="w")',
-            pages_label: 'pages_label.grid(row=9, column=0, padx=padx, pady=0, sticky="w")',
-            text_help_label: 'text_help_label.grid(row=10, column=0, padx=padx, pady=0, sticky="w")',
-            pages: 'pages.grid(row=11, column=0, padx=padx, pady=5, sticky="w")',
-            signature_label: 'signature_label.grid(row=13, column=0, padx=padx, pady=5, sticky="w")',
-            signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
-            signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
+            pages_label: 'pages_label.grid(row=4, column=0, padx=padx, pady=0, sticky="w")',
+            text_help_label: 'text_help_label.grid(row=5, column=0, padx=padx, pady=0, sticky="w")',
+            pages: 'pages.grid(row=6, column=0, padx=padx, pady=5, sticky="w")',
+            btn_file_last_page: 'btn_file_last_page.grid(row=8, column=0, padx=padx, pady=(20, 5), sticky="w")',
+            color_label: 'color_label.grid(row=10, column=0, padx=padx, pady=10, sticky="w")',
+            red: 'red.grid(row=11, column=0, padx=padx, pady=5, sticky="w")',
+            blue: 'blue.grid(row=12, column=0, padx=padx, pady=(5, 15), sticky="w")',
+            # signature_label: 'signature_label.grid(row=13, column=0, padx=padx, pady=5, sticky="w")',
+            # signature_yes: 'signature_yes.grid(row=14, column=0, padx=padx, pady=5, sticky="w")',
+            # signature_no: 'signature_no.grid(row=15, column=0, padx=padx, pady=5, sticky="w")',
             btn_to_work: 'btn_to_work.grid(row=18, column=0, padx=padx, pady=5, sticky="w")',
-            "start_settings": ['color_var.set("red")', 'signature_var.set(1)',
+            "start_settings": ['color_var.set("red")', 'signature_var.set(0)',
                                'docx_label.configure(text=None)', 'last_page_label.configure(text=None)',
                                'pages.delete(0, "end")'],
             "additional_elements": {
                 "error_messages": {
                     invalid_docx_label: 'invalid_docx_label.grid(row=3, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_last_page_label: 'invalid_last_page_label.grid(row=5, column=0, pady=5, padx=padx, sticky="w")',
-                    invalid_pages_label: 'invalid_pages_label.grid(row=12, column=0, pady=5, padx=padx, sticky="w")'
+                    invalid_last_page_label: 'invalid_last_page_label.grid(row=9, column=0, pady=5, padx=padx, sticky="w")',
+                    invalid_pages_label: 'invalid_pages_label.grid(row=7, column=0, pady=5, padx=padx, sticky="w")'
                 },
                 "next_step_elements": {
                     docx_label: 'docx_label.grid(row=3, column=0, padx=padx, pady=5, sticky="w")',
-                    last_page_label: 'last_page_label.grid(row=5, column=0, padx=padx, pady=5, sticky="w")',
+                    last_page_label: 'last_page_label.grid(row=9, column=0, padx=padx, pady=5, sticky="w")',
                     progress_label: 'progress_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")',
                     progress_bar: 'progress_bar.grid(row=17, column=0, pady=5, padx=padx, sticky="w")',
                     conditions_message_label: 'conditions_message_label.grid(row=16, column=0, pady=5, padx=padx, sticky="w")'
@@ -783,14 +785,15 @@ def create_widgets():
             "docx_path": 'docx_label.cget("text")',
             "last_page_path": 'last_page_label.cget("text")',
             "color": 'color_var.get()',
-            "need_sign_translator": '1',
+            "need_sign_translator": '0',
             "is_compression_needed": '1',
         },
         "custom_mode": {
             "docx_path": 'docx_label.cget("text")',
             "last_page_path": 'last_page_label.cget("text")',
             "color": 'color_var.get()',
-            "need_sign_translator": 'signature_var.get()',
+            # "need_sign_translator": 'signature_var.get()',
+            "need_sign_translator": '0',
             "pages": 'pages.get()',
             "is_compression_needed": '1',
         },
@@ -973,6 +976,7 @@ def update_file_label(label, formats, alternative_label):
 
 
 import re
+
 
 def on_validate(param):
     # Если передан объект события, получаем текст из поля
