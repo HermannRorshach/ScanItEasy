@@ -65,7 +65,7 @@ class Converter:
         logging.info(
             f"Начало преобразования DOCX в PDF: {self.docx_file} -> "
             f"{self.pdf_file}")
-        print('pages_to_keep =', pages_to_keep)
+        logging.info(f'pages_to_keep = {pages_to_keep}')
         if not os.path.exists(self.docx_file):
             logging.error(f"Файл {self.docx_file} не существует.")
             raise FileNotFoundError(f"Файл {self.docx_file} не найден.")
@@ -85,14 +85,14 @@ class Converter:
 
         # Если страницы для сохранения не указаны, не изменяем файл
         if pages_to_keep and pages_to_keep != "all":
-            print("совершаем выборочное сохранение страниц в pdf")
+            logging.info("совершаем выборочное сохранение страниц в pdf")
             # Открываем преобразованный PDF
             pdf_document = pymupdf.open(self.pdf_file)
             pdf_writer = pymupdf.open()
 
             # Добавляем только указанные страницы
             for page_num in pages_to_keep:
-                print("Вставляем страницу номер", page_num)
+                logging.info(f'Вставляем страницу номер {page_num}')
                 # Проверяем, что страница существует
                 if page_num < len(pdf_document):
                     # Вставляем страницу в новый PDF
@@ -127,7 +127,7 @@ class Converter:
         Returns:
         list: List of file paths for the generated PNG images.
         """
-        print(pages_to_convert)
+        logging.info(f"pages_to_convert = {pages_to_convert}")
         doc = pymupdf.open(self.pdf_file)
         if not pages_to_convert or pages_to_convert == "all":
             pages_to_convert = range(doc.page_count)
@@ -415,19 +415,20 @@ def merge_multiple_pdfs(files: list, pages: list, output_path: str) -> None:
     Returns:
     None
     """
-    print("files =", files, "pages =", pages, "output_path =", output_path)
+    logging.info(
+        f'files = {files}, pages = {pages}, output_path = {output_path}')
 
     # Создаем новый PDF для записи
     pdf_writer = pymupdf.open()
-    print("Открыли новый файл для записи")
+    logging.info('Открыли новый файл для записи')
 
     for i, pdf_file in enumerate(files):
         pdf_document = pymupdf.open(pdf_file)
-        print('Открываем pdf из параметров', pdf_file)
+        logging.info(f'Открываем pdf из параметров {pdf_file}')
 
         if not pages[i]:  # Строка пуста, значит добавляем все страницы
             pages[i] = list(range(pdf_document.page_count))
-        print("Список страниц файла", pdf_file, pages[i])
+        logging.info(f'Список страниц файла {pdf_file} {pages[i]}')
 
         # Получаем страницы для текущего файла
         for page_num in pages[i]:
@@ -636,7 +637,6 @@ def work_process(settings: dict) -> None:
     """
     logging.info("Начало программы")
     logging.info(f"settings = {settings}")
-    print(f"settings = {settings}")
     is_compression_needed = settings.get("is_compression_needed")
     if settings.get("mode") in ("default_mode", "custom_mode",
                                 "convert_to_pdf_mode"):
@@ -651,7 +651,7 @@ def work_process(settings: dict) -> None:
                 input_pdf="merged_output.pdf", output_pdf=final_output_path)
             logging.info("Сжатие завершено")
             if os.path.exists("merged_output.pdf"):
-                print('Удаляем файл "merged_output.pdf"')
+                logging.info('Удаляем файл "merged_output.pdf"')
                 os.remove("merged_output.pdf")
     elif settings.get("mode") in ("grayscale_mode", "convert_to_png_mode",
                                   "compress_mode"):
