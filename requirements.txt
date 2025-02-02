@@ -1,0 +1,5 @@
+customtkinter==5.2.2
+docx2pdf==0.1.8
+pyinstaller==6.11.1
+PyMuPDF==1.25.2
+pikepdf==9.5.1

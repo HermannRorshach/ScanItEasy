@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import sys
 
 import pymupdf
@@ -670,10 +671,18 @@ def work_process(settings: dict) -> None:
         page = 1
 
     try:
-        os.system(
-            f'start "" "{acrobat_path}" /A "page={page}" "{final_output_path}"'
-            )
-        logging.info(f"Файл {final_output_path} открыт в Adobe Acrobat")
+        system = platform.system()
+        if system == "Windows":
+            os.system(
+                f'start "" "{acrobat_path}" /A "page={page}" '
+                f'"{final_output_path}"'
+                )
+        elif system == "Darwin":  # macOS
+            os.system(f'open -a "Preview" "{final_output_path}"')
+        elif system == "Linux":
+            os.system(f'xdg-open "{final_output_path}"')
+        logging.info(
+            f"Файл {final_output_path} открыт в приложении для PDF на {system}")
     except Exception as error:
         logging.error(f"Ошибка при открытии файла: {error}")
 
