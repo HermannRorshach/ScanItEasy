@@ -1411,8 +1411,8 @@ def work() -> None:
     auto_resize_window()
     user_input_data = {"mode": current_mode}
     logging.debug(f"last_page_label: {last_page_label}, "
-                 f"last_page_label.cget('text') = "
-                 f"{last_page_label.cget('text')}")
+                  f"last_page_label.cget('text') = "
+                  f"{last_page_label.cget('text')}")
     for key, value in user_input[current_mode].items():
         logging.debug(f'key = {key}, value = {value}')
         user_input_data[key] = eval(value)

@@ -682,7 +682,8 @@ def work_process(settings: dict) -> None:
         elif system == "Linux":
             os.system(f'xdg-open "{final_output_path}"')
         logging.info(
-            f"Файл {final_output_path} открыт в приложении для PDF на {system}")
+            f"Файл {final_output_path} открыт в "
+            f"приложении для PDF на {system}")
     except Exception as error:
         logging.error(f"Ошибка при открытии файла: {error}")
 
