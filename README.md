@@ -88,7 +88,9 @@ python3 ScanItEasy_GUI.py
 To compile the program into an executable file for your system, run the following command:
 #### Windows
 ```bash
-pyinstaller --onefile --noconsole \
+pyinstaller --onefile --noconsole --icon=label.png \
+--add-data "label.png;." \
+--add-data "SIE-no-scan.ico;." \
 --add-data "light.png;." \
 --add-data "dark.png;." \
 --add-data "doc_decorations/Красная лента. Первая страница.png;doc_decorations" \
@@ -99,7 +101,9 @@ ScanItEasy_GUI.py
 ```
 #### macOS/Linux
 ```bash
-pyinstaller --onefile --noconsole \
+pyinstaller --onefile --noconsole --icon=label.png \
+--add-data "label.png:." \
+--add-data "SIE-no-scan.ico:." \
 --add-data "light.png:." \
 --add-data "dark.png:." \
 --add-data "doc_decorations/Красная лента. Первая страница.png:doc_decorations" \
@@ -278,7 +282,9 @@ ScanItEasy_GUI.py
 ```
 #### macOS/Linux
 ```bash
-pyinstaller --onefile --noconsole \
+pyinstaller --onefile --noconsole --icon=label.png \
+--add-data "label.png:." \
+--add-data "SIE-no-scan.ico:." \
 --add-data "light.png:." \
 --add-data "dark.png:." \
 --add-data "doc_decorations/Красная лента. Первая страница.png:doc_decorations" \
