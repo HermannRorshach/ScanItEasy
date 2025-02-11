@@ -265,7 +265,9 @@ python3 ScanItEasy_GUI.py
 Для того, чтобы скомпилировать программу в исполняемый файл для вашего компьютера, выполните следующую команду:
 #### Windows
 ```bash
-pyinstaller --onefile --noconsole \
+pyinstaller --onefile --noconsole --icon=label.png \
+--add-data "label.png;." \
+--add-data "SIE-no-scan.ico;." \
 --add-data "light.png;." \
 --add-data "dark.png;." \
 --add-data "doc_decorations/Красная лента. Первая страница.png;doc_decorations" \

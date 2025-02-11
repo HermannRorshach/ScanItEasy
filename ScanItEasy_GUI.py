@@ -1585,8 +1585,10 @@ def on_click(event: tk.Event) -> None:
 
 
 if __name__ == "__main__":
+    print('Поехали')
     # Создаем главное окно и запускаем цикл
     root = ctk.CTk()  # Главное окно
+    root.iconbitmap(resource_path("SIE-no-scan.ico"))
     modes_window = ModesWindow(root)  # Окно с кнопкой для объединения PDF
 
     root.mainloop()  # Запускаем цикл событий главного окна
